@@ -101,6 +101,8 @@ body.admin .card-admin-actions{display:flex}
 .add-btn{width:34px;height:34px;background:var(--black);color:var(--cream);border:none;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;line-height:1;flex-shrink:0;font-family:var(--font-d);font-weight:700}
 .add-btn:active{background:var(--accent);transform:scale(0.92)}
 .add-btn.in-cart{background:var(--accent);font-size:14px}
+.add-btn.maxed{background:var(--muted);cursor:not-allowed;font-size:10px;letter-spacing:0.5px}
+.no-stock-btn{background:var(--bone);color:var(--muted);border:1px solid var(--border);padding:8px 10px;font-family:var(--font-d);font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:default;flex-shrink:0}
 
 /* ORDER BAR */
 .order-bar{position:fixed;bottom:0;left:0;right:0;z-index:90;background:var(--cream);border-top:1.5px solid var(--black);padding:12px 20px 16px;transform:translateY(100%);transition:transform 0.3s ease}
@@ -124,9 +126,12 @@ body.admin .card-admin-actions{display:flex}
 .sheet-subcat-tag{font-family:var(--font-d);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-weight:700}
 .sheet-name{font-family:var(--font-d);font-weight:900;font-size:38px;text-transform:uppercase;letter-spacing:-0.5px;line-height:0.95;color:var(--black);margin-bottom:12px}
 .sheet-desc{font-size:14px;color:var(--muted);font-style:italic;line-height:1.6;font-weight:300;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--bone)}
-.sheet-price{font-family:var(--font-d);font-weight:900;font-size:52px;color:var(--black);letter-spacing:-1px;line-height:1;margin-bottom:20px}
+.sheet-price{font-family:var(--font-d);font-weight:900;font-size:52px;color:var(--black);letter-spacing:-1px;line-height:1;margin-bottom:8px}
 .sheet-price sup{font-size:22px;font-weight:600;color:var(--muted);vertical-align:super}
+.sheet-stock{font-family:var(--font-d);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:20px}
+.sheet-stock.low{color:#c0392b;font-weight:700}
 .sheet-add{width:100%;background:var(--black);color:var(--cream);border:none;padding:17px;font-family:var(--font-d);font-size:17px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-bottom:10px}
+.sheet-add:disabled{background:var(--muted);cursor:not-allowed}
 .sheet-wa{width:100%;background:#25d366;color:#fff;border:none;padding:17px;font-family:var(--font-d);font-size:17px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
 
 /* PIN */
@@ -275,6 +280,7 @@ body.admin .card-admin-actions{display:flex}
       <div class="sheet-name" id="sheetName"></div>
       <div class="sheet-desc" id="sheetDesc"></div>
       <div class="sheet-price" id="sheetPrice"></div>
+      <div class="sheet-stock" id="sheetStock"></div>
       <button class="sheet-add" id="sheetAddBtn" onclick="addFromSheet()">+ AGREGAR AL PEDIDO</button>
       <button class="sheet-wa" onclick="sendSingleWA()">💬 PEDIR ESTE PRODUCTO</button>
     </div>
@@ -307,7 +313,6 @@ body.admin .card-admin-actions{display:flex}
       <div class="upload-title" id="uploadTitle">Nuevo Producto</div>
       <button class="close-x" onclick="closeUpload()">✕</button>
     </div>
-
     <div class="media-drop" id="mediaDrop" onclick="document.getElementById('fileIn').click()">
       <div class="media-drop-icon" id="dropIcon">📸</div>
       <div class="media-drop-text">Foto o video desde tu galería</div>
@@ -315,7 +320,6 @@ body.admin .card-admin-actions{display:flex}
     </div>
     <img class="media-preview" id="mediaPreview">
     <input type="file" id="fileIn" accept="image/*,video/*" style="display:none" onchange="onFile(this)">
-
     <div class="field">
       <label>Nombre del producto</label>
       <input type="text" id="fNom" placeholder="Ej: Milanesas de pollo x6">
@@ -343,7 +347,6 @@ body.admin .card-admin-actions{display:flex}
         <button onclick="addSubcatPrompt()" style="background:var(--black);color:#fff;border:none;padding:0 14px;font-family:var(--font-d);font-size:18px;cursor:pointer;flex-shrink:0">+</button>
       </div>
     </div>
-
     <button class="save-btn" id="saveBtn" onclick="saveProduct()">
       <span id="saveBtnText">PUBLICAR PRODUCTO</span>
     </button>
@@ -373,12 +376,16 @@ let selectedUnitForUpload = null;
 const cart = {};
 let pin = '';
 
-// Subcategorías por unidad (se van actualizando con los productos reales)
 const subcatsByUnit = { FREEZER: new Set(), HELADERA: new Set(), MARKET: new Set() };
-
 const PH_CLASSES = ['ph-1','ph-2','ph-3','ph-4','ph-5','ph-6'];
 const EMOJIS = { FREEZER:'❄️', HELADERA:'🧊', MARKET:'🛍' };
 const LABELS = { FREEZER:'❄️ Freezer', HELADERA:'🧊 Heladera', MARKET:'🛍 Market' };
+
+// ── STOCK HELPER ──
+function getStock(p) {
+  if (!p.lotes || p.lotes.length === 0) return 0;
+  return p.lotes.reduce((sum, l) => sum + (l.cant || 0), 0);
+}
 
 // ── FETCH PRODUCTS ──
 async function fetchProducts() {
@@ -392,7 +399,6 @@ async function fetchProducts() {
 
   allProducts = (data || []).map(row => ({ id: row.id, ...row.data }));
 
-  // Build subcats from real data
   allProducts.forEach(p => {
     const unit = (p.cat || '').toUpperCase();
     if (subcatsByUnit[unit] && p.subcat) subcatsByUnit[unit].add(p.subcat);
@@ -407,7 +413,6 @@ function renderUnit(unit) {
   currentSubcat = 'Todos';
   document.getElementById('sectionLabel').textContent = LABELS[unit];
 
-  // subcats
   const subcats = ['Todos', ...Array.from(subcatsByUnit[unit])];
   const sc = document.getElementById('subcatsList');
   sc.innerHTML = subcats.map((s,i) =>
@@ -416,7 +421,7 @@ function renderUnit(unit) {
 
   const filtered = allProducts.filter(p => {
     const cat = (p.cat || '').toUpperCase();
-    const visible = p.visible !== false; // si no tiene campo visible, se muestra
+    const visible = p.visible !== false;
     return cat === unit && (isAdmin() || visible);
   });
 
@@ -438,14 +443,24 @@ function renderProducts(products) {
     const hasImg = p.foto && p.foto.length > 0;
     const hidden = p.visible === false;
     const price = p.pre || p.precio || 0;
+    const stock = getStock(p);
+    const inCart = cart[p.id] ? cart[p.id].qty : 0;
+
+    let addBtn = '';
+    if (stock === 0) {
+      addBtn = `<div class="no-stock-btn">Sin stock</div>`;
+    } else if (inCart >= stock) {
+      addBtn = `<button class="add-btn maxed" id="btn_${p.id}" onclick="event.stopPropagation();showToast('No hay más stock disponible 📦')">MAX</button>`;
+    } else {
+      addBtn = `<button class="add-btn ${inCart>0?'in-cart':''}" id="btn_${p.id}"
+        onclick="event.stopPropagation();addCart('${p.id}','${(p.nom||'').replace(/'/g,'`')}',${price},${stock})">
+        ${inCart > 0 ? inCart : '+'}</button>`;
+    }
 
     return `
     <div class="card" onclick="openSheet('${p.id}')">
       <div class="card-img ${hasImg ? '' : ph}">
-        ${hasImg
-          ? `<img src="${p.foto}" alt="${p.nom}" loading="lazy">`
-          : `<div class="card-emoji-ph">${getEmoji(p)}</div>`
-        }
+        ${hasImg ? `<img src="${p.foto}" alt="${p.nom}" loading="lazy">` : `<div class="card-emoji-ph">${getEmoji(p)}</div>`}
         ${p.subcat ? `<div class="card-tag">${p.subcat}</div>` : ''}
         ${hidden ? `<div class="card-hidden-badge">👁 Oculto</div>` : ''}
       </div>
@@ -460,10 +475,7 @@ function renderProducts(products) {
         <div class="card-desc">${p.descripcion || p.desc || ''}</div>
         <div class="card-footer">
           <div class="card-price"><span>$</span>${price.toLocaleString('es-AR')}</div>
-          <button class="add-btn ${cart[p.id]?'in-cart':''}" id="btn_${p.id}"
-            onclick="event.stopPropagation();addCart('${p.id}','${(p.nom||'').replace(/'/g,'`')}',${price})">
-            ${cart[p.id] ? cart[p.id].qty : '+'}
-          </button>
+          ${addBtn}
         </div>
       </div>
     </div>`;
@@ -507,18 +519,48 @@ function setSubcat(subcat, el) {
 }
 
 // ── CART ──
-function addCart(id, name, price) {
-  cart[id] = cart[id] ? { ...cart[id], qty: cart[id].qty + 1 } : { name, price, qty: 1 };
+function addCart(id, name, price, stock) {
+  const inCart = cart[id] ? cart[id].qty : 0;
+  if (stock !== undefined && inCart >= stock) {
+    showToast('No hay más stock disponible 📦');
+    return;
+  }
+  cart[id] = { name, price, qty: inCart + 1, stock };
   const btn = document.getElementById('btn_' + id);
-  if (btn) { btn.textContent = cart[id].qty; btn.classList.add('in-cart'); }
+  if (btn) {
+    if (stock !== undefined && cart[id].qty >= stock) {
+      btn.textContent = 'MAX';
+      btn.className = 'add-btn maxed';
+      btn.onclick = (e) => { e.stopPropagation(); showToast('No hay más stock disponible 📦'); };
+    } else {
+      btn.textContent = cart[id].qty;
+      btn.className = 'add-btn in-cart';
+    }
+  }
   updateCartUI();
 }
 
 function addFromSheet() {
   if (!currentProduct) return;
-  const { id, name, price } = currentProduct;
-  addCart(id, name, price);
-  document.getElementById('sheetAddBtn').textContent = `✓ EN PEDIDO (${cart[id].qty})`;
+  const { id, name, price, stock } = currentProduct;
+  if (stock === 0) { showToast('Sin stock momentáneamente 📦'); return; }
+  const inCart = cart[id] ? cart[id].qty : 0;
+  if (inCart >= stock) { showToast('No hay más stock disponible 📦'); return; }
+  addCart(id, name, price, stock);
+  const qty = cart[id].qty;
+  const sheetBtn = document.getElementById('sheetAddBtn');
+  sheetBtn.textContent = qty >= stock ? '✓ STOCK MÁXIMO' : `✓ EN PEDIDO (${qty})`;
+  // actualizar stock label
+  updateSheetStock(stock, qty);
+}
+
+function updateSheetStock(stock, inCart) {
+  const el = document.getElementById('sheetStock');
+  if (!el) return;
+  const restante = stock - inCart;
+  if (stock === 0) { el.textContent = 'Sin stock momentáneamente'; el.className = 'sheet-stock low'; }
+  else if (restante <= 3) { el.textContent = `Últimas ${restante} unidades`; el.className = 'sheet-stock low'; }
+  else { el.textContent = `${stock} disponibles`; el.className = 'sheet-stock'; }
 }
 
 function updateCartUI() {
@@ -553,14 +595,34 @@ function openSheet(id) {
   const p = allProducts.find(x => x.id === id);
   if (!p) return;
   const price = p.pre || p.precio || 0;
-  currentProduct = { id, name: p.nom || p.nombre || 'Producto', price };
+  const stock = getStock(p);
+  const inCart = cart[id] ? cart[id].qty : 0;
+  currentProduct = { id, name: p.nom || p.nombre || 'Producto', price, stock };
 
   document.getElementById('sheetName').textContent = p.nom || p.nombre || 'Producto';
   document.getElementById('sheetDesc').textContent = (p.descripcion || p.desc || '') + (p.tips?.length ? ' · ' + p.tips.join(', ') : '');
   document.getElementById('sheetPrice').innerHTML = '<sup>$</sup>' + price.toLocaleString('es-AR');
   document.getElementById('sheetUnit').textContent = currentUnit;
   document.getElementById('sheetSubcat').textContent = p.subcat || '';
-  document.getElementById('sheetAddBtn').textContent = cart[id] ? `✓ EN PEDIDO (${cart[id].qty})` : '+ AGREGAR AL PEDIDO';
+
+  // Stock info
+  updateSheetStock(stock, inCart);
+
+  // Add button state
+  const sheetBtn = document.getElementById('sheetAddBtn');
+  if (stock === 0) {
+    sheetBtn.textContent = 'SIN STOCK MOMENTÁNEAMENTE';
+    sheetBtn.disabled = true;
+  } else if (inCart >= stock) {
+    sheetBtn.textContent = '✓ STOCK MÁXIMO';
+    sheetBtn.disabled = false;
+  } else if (inCart > 0) {
+    sheetBtn.textContent = `✓ EN PEDIDO (${inCart})`;
+    sheetBtn.disabled = false;
+  } else {
+    sheetBtn.textContent = '+ AGREGAR AL PEDIDO';
+    sheetBtn.disabled = false;
+  }
 
   const media = document.getElementById('sheetMedia');
   const ph = PH_CLASSES[allProducts.indexOf(p) % PH_CLASSES.length];
@@ -592,7 +654,6 @@ async function toggleVisible(id, currentlyHidden) {
   fetchProducts();
 }
 
-// ── PIN ──
 // ── PIN con bloqueo ──
 const MAX_ATTEMPTS = 3;
 const LOCKOUT_MS = 5 * 60 * 1000;
@@ -688,7 +749,6 @@ function openUpload(id) {
   document.getElementById('saveBtnText').textContent = id ? 'GUARDAR CAMBIOS' : 'PUBLICAR PRODUCTO';
   document.querySelectorAll('.unit-pick').forEach(b=>b.classList.remove('sel'));
 
-  // si es edición, pre-llenamos
   if (id) {
     const p = allProducts.find(x => x.id === id);
     if (p) {
@@ -724,7 +784,6 @@ function pickUnit(unit, el) {
   selectedUnitForUpload = unit;
   document.querySelectorAll('.unit-pick').forEach(b=>b.classList.remove('sel'));
   if (el) el.classList.add('sel');
-  // populate subcats
   const subcats = Array.from(subcatsByUnit[unit] || []);
   const sel = document.getElementById('fSubcat');
   sel.innerHTML = subcats.map(s=>`<option>${s}</option>`).join('') + '<option value="__new__">+ Nueva subcategoría</option>';
@@ -758,7 +817,6 @@ async function saveProduct() {
 
   let fotoUrl = null;
 
-  // Upload file if selected
   if (selectedFile) {
     const ext = selectedFile.name.split('.').pop();
     const path = `productos/${Date.now()}.${ext}`;
@@ -768,11 +826,9 @@ async function saveProduct() {
     fotoUrl = urlData.publicUrl;
   }
 
-  // Build data
   const now = new Date().toISOString();
 
   if (editingId) {
-    // UPDATE
     const existing = allProducts.find(x => x.id === editingId);
     const newData = { ...existing, nom, descripcion: desc, pre, cat: unit, subcat, visible: true };
     if (fotoUrl) newData.foto = fotoUrl;
@@ -781,7 +837,6 @@ async function saveProduct() {
     if (error) { showToast('Error al guardar'); }
     else { showToast('Producto actualizado ✓'); closeUpload(); fetchProducts(); }
   } else {
-    // INSERT
     const id = 'p_' + Date.now();
     const newData = { nom, descripcion: desc, pre, cat: unit, subcat, visible: true, foto: fotoUrl || null, fechaCreacion: now, lotes: [], tips: [] };
     const { error } = await supabaseClient.from('productos').insert({ id, data: newData, created_at: now, updated_at: now });
