@@ -515,6 +515,7 @@ function renderProducts(products) {
         <button class="card-action-btn hide-btn" onclick="event.stopPropagation();toggleVisible('${p.id}',${hidden})">
           ${hidden?'MOSTRAR':'OCULTAR'}
         </button>
+        <button class="card-action-btn" style="background:#c0392b" onclick="event.stopPropagation();deleteProduct('${p.id}','${(p.nom||'').replace(/'/g,'`')}')">BORRAR</button>
       </div>
       <div class="card-body">
         <div class="card-name">${p.nom||'Producto'}</div>
@@ -763,6 +764,15 @@ function sendSingleWA() {
   window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
 }
 
+// ── DELETE PRODUCT ──
+async function deleteProduct(id, name) {
+  if (!confirm('¿Borrar ' + name + '? Esta acción no se puede deshacer.')) return;
+  const { error } = await supabaseClient.from('productos').delete().eq('id', id);
+  if (error) { showToast('Error al borrar'); return; }
+  showToast('Producto borrado ✓');
+  fetchProducts();
+}
+
 // ── TOGGLE VISIBLE ──
 async function toggleVisible(id, currentlyHidden) {
   const p = allProducts.find(x=>x.id===id);
@@ -819,6 +829,7 @@ function setAccent(color,el) {
   document.documentElement.style.setProperty('--accent',color);
   document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
   el.classList.add('active');
+  localStorage.setItem('cp_accent', color);
 }
 
 // ── UPLOAD ──
@@ -960,6 +971,17 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── INIT ──
+const savedAccent = localStorage.getItem('cp_accent');
+if (savedAccent) {
+  document.documentElement.style.setProperty('--accent', savedAccent);
+  document.querySelectorAll('.swatch').forEach(s => {
+    if (s.getAttribute('onclick') && s.getAttribute('onclick').includes(savedAccent)) {
+      s.classList.add('active');
+    } else {
+      s.classList.remove('active');
+    }
+  });
+}
 fetchProducts();
 </script>
 </body>
