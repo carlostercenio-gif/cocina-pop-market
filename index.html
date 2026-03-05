@@ -225,6 +225,36 @@ body.admin .card-admin-actions{display:flex}
 .save-btn:disabled{opacity:0.5;cursor:not-allowed}
 .save-btn:not(:disabled):hover{background:var(--accent)}
 
+
+/* CONFIG PANEL */
+.config-overlay{position:fixed;inset:0;background:rgba(26,25,23,0.8);z-index:450;display:none;align-items:flex-end}
+.config-overlay.open{display:flex}
+.config-sheet{background:var(--white);width:100%;max-height:92vh;overflow-y:auto;border-top:1.5px solid var(--black);animation:sheetUp 0.3s cubic-bezier(0.32,0.72,0,1);padding:24px 20px 40px}
+.config-section{margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--bone)}
+.config-section:last-child{border-bottom:none}
+.config-section-title{font-family:var(--font-d);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;font-weight:700}
+.zona-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px;background:var(--bone)}
+.zona-nombre{font-family:var(--font-d);font-weight:800;font-size:14px;flex:1;text-transform:uppercase}
+.zona-input{width:90px;background:#fff;border:1.5px solid var(--border);padding:8px 10px;font-family:var(--font-b);font-size:14px;outline:none;text-align:right}
+.zona-remove{background:none;border:none;color:#c0392b;font-size:18px;cursor:pointer;padding:4px}
+.add-zona-btn{width:100%;background:var(--charcoal);color:#fff;border:none;padding:12px;font-family:var(--font-d);font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-top:8px}
+.dias-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:12px}
+.dia-btn{padding:8px 4px;border:1.5px solid var(--border);background:var(--bone);font-family:var(--font-d);font-size:11px;font-weight:700;cursor:pointer;text-align:center;color:var(--muted);transition:all 0.2s}
+.dia-btn.on{background:var(--black);color:#fff;border-color:var(--black)}
+
+/* HORARIO BADGE */
+.horario-badge{display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--bone);border-bottom:1px solid var(--border);font-family:var(--font-d);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.horario-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.horario-dot.open{background:#2ed573}
+.horario-dot.closed{background:#ff4757}
+
+/* PAGO */
+.pago-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.pago-opt{padding:12px 8px;border:1.5px solid var(--border);background:var(--bone);font-family:var(--font-d);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;text-align:center;color:var(--muted);transition:all 0.2s}
+.pago-opt.sel{background:var(--black);color:var(--cream);border-color:var(--black)}
+.alias-box{background:var(--black);color:var(--cream);padding:14px 16px;font-family:var(--font-d);font-size:20px;font-weight:900;letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:8px;display:none}
+.alias-box.show{display:block}
+.alias-label{font-size:10px;letter-spacing:2px;color:rgba(255,255,255,0.5);display:block;margin-bottom:4px}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--black);color:var(--cream);padding:12px 24px;font-family:var(--font-d);font-size:13px;letter-spacing:2px;text-transform:uppercase;z-index:600;opacity:0;transition:all 0.3s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
@@ -246,6 +276,7 @@ body.admin .card-admin-actions{display:flex}
   </div>
 </header>
 
+<div class="horario-badge" id="horarioBadge"><div class="horario-dot" id="horarioDot"></div><span id="horarioText"></span></div>
 <div class="admin-panel" id="adminPanel">
   <div class="admin-section-title">Color de temporada</div>
   <div class="season-grid">
@@ -257,6 +288,7 @@ body.admin .card-admin-actions{display:flex}
     <div class="swatch sw-wt" onclick="setAccent('#7a746a',this)">Stone</div>
   </div>
   <button class="admin-btn" onclick="openUpload(null)">＋ AGREGAR PRODUCTO</button>
+  <button class="admin-btn sec" onclick="openConfig()">⚙️ CONFIGURACIÓN</button>
 </div>
 
 <div class="hero">
@@ -342,7 +374,23 @@ body.admin .card-admin-actions{display:flex}
           <div class="delivery-opt sel" id="optRetiro" onclick="setDelivery('retiro')">🏪 Retiro</div>
           <div class="delivery-opt" id="optEnvio" onclick="setDelivery('envio')">🚚 Envío</div>
         </div>
-        <input class="delivery-addr" id="deliveryAddr" placeholder="Tu dirección completa..." type="text">
+        <div id="retiroInfo" style="font-family:var(--font-d);font-size:11px;letter-spacing:1px;color:var(--muted);padding:8px 0;text-transform:uppercase"></div>
+        <div id="envioSection" style="display:none">
+          <select id="zonaSelect" style="width:100%;background:var(--bone);border:1.5px solid var(--border);padding:12px 14px;font-family:var(--font-b);font-size:14px;outline:none;margin-bottom:8px;border-radius:0">
+            <option value="">Elegí tu zona...</option>
+          </select>
+          <div id="costoEnvio" style="font-family:var(--font-d);font-size:13px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:8px"></div>
+          <input class="delivery-addr show" id="deliveryAddr" placeholder="Tu dirección completa..." type="text">
+        </div>
+        <div class="delivery-title" style="margin-top:14px">Forma de pago</div>
+        <div class="pago-opts">
+          <div class="pago-opt sel" id="pagoTransf" onclick="setPago('transferencia')">💳 Transferencia</div>
+          <div class="pago-opt" id="pagoEfectivo" onclick="setPago('efectivo')">💵 Efectivo</div>
+        </div>
+        <div class="alias-box" id="aliasBox">
+          <span class="alias-label">Alias de pago</span>
+          <span id="aliasText">bellapop</span>
+        </div>
       </div>
       <div class="cart-total-row">
         <span class="cart-total-label">Total</span>
@@ -410,12 +458,63 @@ body.admin .card-admin-actions{display:flex}
   </div>
 </div>
 
+
+<!-- CONFIG SHEET -->
+<div class="config-overlay" id="configOverlay" onclick="if(event.target===this)closeConfig()">
+  <div class="config-sheet">
+    <div class="upload-header">
+      <div class="upload-title">⚙️ Configuración</div>
+      <button class="close-x" onclick="closeConfig()">✕</button>
+    </div>
+
+    <div class="config-section">
+      <div class="config-section-title">💳 Alias de pago</div>
+      <div class="field" style="margin:0">
+        <input type="text" id="cfgAlias" placeholder="tualiasaca">
+      </div>
+    </div>
+
+    <div class="config-section">
+      <div class="config-section-title">🕐 Horario de atención</div>
+      <div class="dias-grid" id="diasGrid"></div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1;margin:0"><label>Desde</label><input type="time" id="cfgInicio"></div>
+        <div class="field" style="flex:1;margin:0"><label>Hasta</label><input type="time" id="cfgFin"></div>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <div class="config-section-title">🚚 Zonas de envío</div>
+      <div id="zonasContainer"></div>
+      <button class="add-zona-btn" onclick="addZona()">+ AGREGAR ZONA</button>
+    </div>
+
+    <button class="save-btn" onclick="saveConfigForm()">GUARDAR CONFIGURACIÓN</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
 const SUPABASE_URL = 'https://ihbjoltcrisiqkcvggmq.supabase.co';
 const ANON_KEY = 'sb_publishable_4HRUBcFa2mVj-trIX7l0lw_1_veRoIk';
 const WA_NUMBER = '541156444379';
+
+// ── CONFIG (editable desde admin) ──
+const DEFAULT_CONFIG = {
+  alias: 'bellapop',
+  horario: { inicio: '08:00', fin: '15:30', dias: [1,2,3,4,5] }, // lunes=1, viernes=5
+  zonas: [
+    { nombre: 'San Justo', costo: 0 },
+    { nombre: 'Ramos Mejía', costo: 500 },
+    { nombre: 'Morón', costo: 800 },
+    { nombre: 'Haedo', costo: 600 }
+  ]
+};
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem('cp_config')) || DEFAULT_CONFIG; }
+  catch { return DEFAULT_CONFIG; }
+}
+function saveConfig(cfg) { localStorage.setItem('cp_config', JSON.stringify(cfg)); }
 const PIN_CODE = '1979';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, ANON_KEY);
@@ -956,6 +1055,187 @@ async function saveProduct() {
 
   btn.disabled=false;
   document.getElementById('saveBtnText').textContent = editingId ? 'GUARDAR CAMBIOS' : 'PUBLICAR PRODUCTO';
+}
+
+
+// ── HORARIO ──
+function checkHorario() {
+  const cfg = getConfig();
+  const now = new Date();
+  const dia = now.getDay() === 0 ? 7 : now.getDay();
+  const hhmm = now.getHours() * 60 + now.getMinutes();
+  const [ih, im] = cfg.horario.inicio.split(':').map(Number);
+  const [fh, fm] = cfg.horario.fin.split(':').map(Number);
+  const inicio = ih * 60 + im;
+  const fin = fh * 60 + fm;
+  const abierto = cfg.horario.dias.includes(dia) && hhmm >= inicio && hhmm <= fin;
+  const dot = document.getElementById('horarioDot');
+  const text = document.getElementById('horarioText');
+  const dias = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const diasStr = cfg.horario.dias.map(d => dias[d]).join(' · ');
+  if (dot) dot.className = 'horario-dot ' + (abierto ? 'open' : 'closed');
+  if (text) text.textContent = abierto
+    ? `Abierto · ${diasStr} ${cfg.horario.inicio} a ${cfg.horario.fin}hs`
+    : `Cerrado · Retiro ${diasStr} ${cfg.horario.inicio} a ${cfg.horario.fin}hs`;
+}
+
+// ── PAGO ──
+let pagoMode = 'transferencia';
+function setPago(mode) {
+  pagoMode = mode;
+  document.getElementById('pagoTransf').classList.toggle('sel', mode==='transferencia');
+  document.getElementById('pagoEfectivo').classList.toggle('sel', mode==='efectivo');
+  const aliasBox = document.getElementById('aliasBox');
+  aliasBox.classList.toggle('show', mode==='transferencia');
+  if (mode==='transferencia') {
+    document.getElementById('aliasText').textContent = getConfig().alias || 'bellapop';
+  }
+}
+
+// ── ZONA ──
+function populateZonas() {
+  const cfg = getConfig();
+  const sel = document.getElementById('zonaSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Elegí tu zona...</option>' +
+    cfg.zonas.map(z => `<option value="${z.costo}">${z.nombre}${z.costo > 0 ? ' — $'+z.costo.toLocaleString() : ' — Gratis'}</option>`).join('');
+  sel.onchange = () => {
+    const costo = sel.value;
+    const costoEl = document.getElementById('costoEnvio');
+    if (costo === '') { costoEl.textContent = ''; return; }
+    costoEl.textContent = costo === '0' ? '✓ Envío gratis' : `Costo de envío: $${parseInt(costo).toLocaleString()}`;
+    updateCartTotal();
+  };
+
+  const retiroInfo = document.getElementById('retiroInfo');
+  const cfg2 = getConfig();
+  const dias = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const diasStr = cfg2.horario.dias.map(d => dias[d]).join(' · ');
+  if (retiroInfo) retiroInfo.textContent = `Retiro: ${diasStr} ${cfg2.horario.inicio} a ${cfg2.horario.fin}hs · San Justo`;
+}
+
+function getEnvioCosto() {
+  const sel = document.getElementById('zonaSelect');
+  if (!sel || deliveryMode !== 'envio') return 0;
+  return parseInt(sel.value) || 0;
+}
+
+function updateCartTotal() {
+  const items = Object.values(cart);
+  let total = items.reduce((s,i) => s + i.price*i.qty, 0);
+  total += getEnvioCosto();
+  document.getElementById('cartTotalAmount').textContent = '$' + total.toLocaleString('es-AR');
+}
+
+// Override setDelivery to show/hide zona
+function setDelivery(mode) {
+  deliveryMode = mode;
+  document.getElementById('optRetiro').classList.toggle('sel', mode==='retiro');
+  document.getElementById('optEnvio').classList.toggle('sel', mode==='envio');
+  document.getElementById('envioSection').style.display = mode==='envio' ? 'block' : 'none';
+  document.getElementById('retiroInfo').style.display = mode==='retiro' ? 'block' : 'none';
+  if (mode==='envio') populateZonas();
+  updateCartTotal();
+}
+
+// Override sendCartWA to include pago and envio cost
+function sendCartWA() {
+  const items = Object.values(cart);
+  if (!items.length) return;
+  const addr = document.getElementById('deliveryAddr') ? document.getElementById('deliveryAddr').value.trim() : '';
+  const zonaSelect = document.getElementById('zonaSelect');
+  const zona = zonaSelect ? zonaSelect.options[zonaSelect.selectedIndex]?.text : '';
+  if (deliveryMode==='envio' && !addr) { showToast('Ingresá tu dirección 📍'); return; }
+  if (deliveryMode==='envio' && !zonaSelect?.value && zonaSelect?.value !== '0') { showToast('Elegí tu zona de envío 📍'); return; }
+
+  let subtotal = 0;
+  let msg = '¡Hola Cocina Pop! 👋 Quiero hacer este pedido:\n\n';
+  items.forEach(i => { const s=i.price*i.qty; msg+=`• ${i.name} x${i.qty} — $${s.toLocaleString()}\n`; subtotal+=s; });
+
+  const envioCosto = getEnvioCosto();
+  const total = subtotal + envioCosto;
+
+  msg += `\n*Subtotal: $${subtotal.toLocaleString()}*\n`;
+  if (envioCosto > 0) msg += `*Envío: $${envioCosto.toLocaleString()}*\n`;
+  msg += `*TOTAL: $${total.toLocaleString()}*\n\n`;
+
+  if (deliveryMode==='envio') {
+    msg += `🚚 *Envío a:* ${addr} (${zona})\n`;
+  } else {
+    const cfg = getConfig();
+    const dias = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    const diasStr = cfg.horario.dias.map(d => dias[d]).join('-');
+    msg += `🏪 *Retiro en local* · ${diasStr} ${cfg.horario.inicio} a ${cfg.horario.fin}hs\n`;
+  }
+
+  msg += `\n💳 *Pago:* ${pagoMode === 'transferencia' ? 'Transferencia · Alias: ' + (getConfig().alias||'bellapop') : 'Efectivo'}\n`;
+  msg += '\n¡Gracias! 🍔';
+  window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
+}
+
+// ── CONFIG PANEL ──
+function openConfig() {
+  const cfg = getConfig();
+  document.getElementById('cfgAlias').value = cfg.alias || 'bellapop';
+  document.getElementById('cfgInicio').value = cfg.horario.inicio;
+  document.getElementById('cfgFin').value = cfg.horario.fin;
+
+  // Días
+  const dias = [{n:'L',v:1},{n:'M',v:2},{n:'X',v:3},{n:'J',v:4},{n:'V',v:5},{n:'S',v:6},{n:'D',v:7}];
+  document.getElementById('diasGrid').innerHTML = dias.map(d =>
+    `<button class="dia-btn ${cfg.horario.dias.includes(d.v)?'on':''}" onclick="toggleDia(${d.v},this)">${d.n}</button>`
+  ).join('');
+
+  // Zonas
+  renderZonasConfig(cfg.zonas);
+  document.getElementById('configOverlay').classList.add('open');
+}
+
+function closeConfig() { document.getElementById('configOverlay').classList.remove('open'); }
+
+function toggleDia(v, el) { el.classList.toggle('on'); }
+
+function renderZonasConfig(zonas) {
+  document.getElementById('zonasContainer').innerHTML = zonas.map((z,i) => `
+    <div class="zona-row">
+      <div class="zona-nombre">${z.nombre}</div>
+      <span style="font-family:var(--font-d);font-size:11px;color:var(--muted)">$</span>
+      <input class="zona-input" type="number" value="${z.costo}" id="zona_costo_${i}">
+      <button class="zona-remove" onclick="removeZona(${i})">✕</button>
+    </div>`).join('');
+}
+
+function removeZona(i) {
+  const cfg = getConfig();
+  cfg.zonas.splice(i, 1);
+  renderZonasConfig(cfg.zonas);
+}
+
+function addZona() {
+  const nombre = prompt('Nombre de la zona:');
+  if (!nombre) return;
+  const cfg = getConfig();
+  cfg.zonas.push({ nombre: nombre.trim(), costo: 0 });
+  renderZonasConfig(cfg.zonas);
+}
+
+function saveConfigForm() {
+  const cfg = getConfig();
+  cfg.alias = document.getElementById('cfgAlias').value.trim() || 'bellapop';
+  cfg.horario.inicio = document.getElementById('cfgInicio').value;
+  cfg.horario.fin = document.getElementById('cfgFin').value;
+  cfg.horario.dias = Array.from(document.querySelectorAll('#diasGrid .dia-btn.on')).map(b => parseInt(b.getAttribute('onclick').match(/\d+/)[0]));
+
+  // Update zonas costs
+  cfg.zonas.forEach((z,i) => {
+    const input = document.getElementById(`zona_costo_${i}`);
+    if (input) z.costo = parseInt(input.value) || 0;
+  });
+
+  saveConfig(cfg);
+  closeConfig();
+  checkHorario();
+  showToast('Configuración guardada ✓');
 }
 
 // ── TOAST ──
