@@ -12,6 +12,8 @@
 <title>Cocina Pop — Market</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
 <style>
 :root {
   --cream:#f0ebe0; --bone:#e8e1d4; --black:#1a1917; --charcoal:#2d2b28;
@@ -257,24 +259,26 @@ body.admin .card-admin-actions{display:flex}
 .alias-label{font-size:10px;letter-spacing:2px;color:rgba(255,255,255,0.5);display:block;margin-bottom:4px}
 
 /* TICKET */
-.ticket-overlay{position:fixed;inset:0;background:rgba(26,25,23,0.8);z-index:550;display:none;align-items:center;justify-content:center;padding:20px}
+.ticket-overlay{position:fixed;inset:0;background:rgba(26,25,23,0.9);z-index:550;display:none;align-items:center;justify-content:center;padding:20px;flex-direction:column;gap:12px}
 .ticket-overlay.open{display:flex}
-.ticket{background:#fff;width:100%;max-width:360px;padding:24px;font-family:'Courier New',monospace;font-size:12px;line-height:1.6;max-height:90vh;overflow-y:auto}
-.ticket-header{text-align:center;border-bottom:2px dashed #ccc;padding-bottom:12px;margin-bottom:12px}
-.ticket-brand{font-size:20px;font-weight:900;letter-spacing:3px}
-.ticket-sub{font-size:10px;letter-spacing:2px;color:#666}
-.ticket-row{display:flex;justify-content:space-between;gap:8px;margin-bottom:2px}
-.ticket-section{border-top:1px dashed #ccc;padding-top:10px;margin-top:10px}
-.ticket-label{font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#333}
-.ticket-actions{display:flex;gap:8px;margin-top:16px}
-.ticket-btn{flex:1;padding:12px;border:none;font-family:var(--font-d);font-size:14px;font-weight:800;letter-spacing:1px;cursor:pointer;text-transform:uppercase}
-.ticket-print{background:var(--black);color:#fff}
-.ticket-close{background:var(--bone);color:var(--black);border:1.5px solid var(--black)}
-@media print {
-  body > *:not(.ticket-overlay) { display:none !important; }
-  .ticket-overlay { position:static !important; background:none !important; padding:0 !important; }
-  .ticket-actions { display:none !important; }
-}
+.ticket-wrap{overflow-y:auto;max-height:75vh;width:100%;display:flex;justify-content:center}
+.ticket{background:#fff;width:220px;padding:12px 10px;font-family:'Courier New',monospace;font-size:13px;line-height:1.7;flex-shrink:0}
+.ticket-header{text-align:center;border-bottom:2px dashed #000;padding-bottom:8px;margin-bottom:8px}
+.ticket-brand{font-size:16px;font-weight:900;letter-spacing:2px}
+.ticket-sub{font-size:9px;letter-spacing:1px;color:#333;margin-top:2px}
+.ticket-date{font-size:9px;color:#555;margin-top:4px}
+.ticket-row{display:flex;justify-content:space-between;gap:4px;font-size:12px;word-break:break-word}
+.ticket-row span:first-child{flex:1}
+.ticket-row span:last-child{flex-shrink:0;font-weight:700}
+.ticket-section{border-top:1px dashed #000;padding-top:7px;margin-top:7px}
+.ticket-label{font-weight:900;font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.ticket-line{font-size:12px;margin-bottom:2px;word-break:break-word}
+.ticket-total{font-size:16px;font-weight:900;text-align:center;border:2px solid #000;padding:6px;margin-top:6px}
+.ticket-footer{text-align:center;font-size:9px;color:#555;margin-top:8px;border-top:1px dashed #000;padding-top:6px}
+.ticket-actions{display:flex;gap:8px;width:100%;max-width:280px}
+.ticket-btn{flex:1;padding:14px;border:none;font-family:var(--font-d);font-size:14px;font-weight:800;letter-spacing:1px;cursor:pointer;text-transform:uppercase}
+.ticket-print{background:#fff;color:#000;border:2px solid #fff}
+.ticket-close{background:rgba(255,255,255,0.15);color:#fff;border:1.5px solid rgba(255,255,255,0.3)}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--black);color:var(--cream);padding:12px 24px;font-family:var(--font-d);font-size:13px;letter-spacing:2px;text-transform:uppercase;z-index:600;opacity:0;transition:all 0.3s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
@@ -546,17 +550,20 @@ body.admin .card-admin-actions{display:flex}
 
 <!-- TICKET -->
 <div class="ticket-overlay" id="ticketOverlay">
-  <div class="ticket" id="ticketContent">
-    <div class="ticket-header">
-      <div class="ticket-brand">COCINA POP</div>
-      <div class="ticket-sub">MARKET · PEDIDO DE ENTREGA</div>
-      <div style="margin-top:6px;font-size:11px" id="ticketFecha"></div>
+  <div class="ticket-wrap">
+    <div class="ticket" id="ticketContent">
+      <div class="ticket-header">
+        <div class="ticket-brand">COCINA POP</div>
+        <div class="ticket-sub">MARKET — DELIVERY</div>
+        <div class="ticket-date" id="ticketFecha"></div>
+      </div>
+      <div id="ticketBody"></div>
+      <div class="ticket-footer">Entrega 18:00 a 22:00hs<br>cocina-pop-market.vercel.app</div>
     </div>
-    <div id="ticketBody"></div>
   </div>
-  <div class="ticket-actions" style="max-width:360px;width:100%">
+  <div class="ticket-actions">
     <button class="ticket-btn ticket-close" onclick="closeTicket()">✕ CERRAR</button>
-    <button class="ticket-btn ticket-print" onclick="window.print()">🖨 IMPRIMIR</button>
+    <button class="ticket-btn ticket-print" onclick="downloadTicket()">⬇ DESCARGAR</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -1406,6 +1413,24 @@ function openTicket(pedidoData) {
   document.getElementById('ticketOverlay').classList.add('open');
 }
 function closeTicket() { document.getElementById('ticketOverlay').classList.remove('open'); }
+
+function downloadTicket() {
+  const el = document.getElementById('ticketContent');
+  html2canvas(el, {
+    scale: 3,
+    backgroundColor: '#ffffff',
+    useCORS: true,
+    width: 220,
+    windowWidth: 220
+  }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'ticket-cocina-pop.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('Ticket descargado ✓');
+  });
+}
+
 // ── TOAST ──
 function showToast(msg) {
   const t=document.getElementById('toast');
