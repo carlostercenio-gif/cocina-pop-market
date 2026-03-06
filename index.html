@@ -1416,27 +1416,45 @@ function closeTicket() { document.getElementById('ticketOverlay').classList.remo
 
 function downloadTicket() {
   const el = document.getElementById('ticketContent');
-  const fullHeight = el.scrollHeight;
-  const fullWidth = el.scrollWidth;
-  html2canvas(el, {
-    scale: 3,
-    backgroundColor: '#ffffff',
-    useCORS: true,
-    width: fullWidth,
-    height: fullHeight,
-    windowWidth: fullWidth,
-    windowHeight: fullHeight,
-    scrollX: 0,
-    scrollY: 0,
-    y: 0,
-    x: 0
-  }).then(canvas => {
-    const link = document.createElement('a');
-    link.download = 'ticket-cocina-pop.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    showToast('Ticket descargado ✓');
-  });
+  // Temporarily move ticket out of scrollable container for full capture
+  const origParent = el.parentNode;
+  const origStyle = el.getAttribute('style') || '';
+  document.body.appendChild(el);
+  el.style.position = 'fixed';
+  el.style.top = '-9999px';
+  el.style.left = '0';
+  el.style.width = '220px';
+  el.style.height = 'auto';
+  el.style.background = '#fff';
+  el.style.zIndex = '-1';
+
+  setTimeout(() => {
+    const fullHeight = el.scrollHeight;
+    html2canvas(el, {
+      scale: 3,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      width: 220,
+      height: fullHeight,
+      windowWidth: 220,
+      windowHeight: fullHeight,
+      scrollX: 0,
+      scrollY: 0
+    }).then(canvas => {
+      // Restore element
+      origParent.appendChild(el);
+      el.setAttribute('style', origStyle);
+      const link = document.createElement('a');
+      link.download = 'ticket-cocina-pop.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('Ticket descargado ✓');
+    }).catch(() => {
+      origParent.appendChild(el);
+      el.setAttribute('style', origStyle);
+      showToast('Error al descargar');
+    });
+  }, 100);
 }
 
 // ── TOAST ──
