@@ -262,19 +262,19 @@ body.admin .card-admin-actions{display:flex}
 .ticket-overlay{position:fixed;inset:0;background:rgba(26,25,23,0.9);z-index:550;display:none;align-items:center;justify-content:center;padding:20px;flex-direction:column;gap:12px}
 .ticket-overlay.open{display:flex}
 .ticket-wrap{overflow-y:auto;max-height:75vh;width:100%;display:flex;justify-content:center}
-.ticket{background:#fff;width:220px;padding:12px 10px;font-family:'Courier New',monospace;font-size:13px;line-height:1.7;flex-shrink:0}
-.ticket-header{text-align:center;border-bottom:2px dashed #000;padding-bottom:8px;margin-bottom:8px}
-.ticket-brand{font-size:16px;font-weight:900;letter-spacing:2px}
-.ticket-sub{font-size:9px;letter-spacing:1px;color:#333;margin-top:2px}
-.ticket-date{font-size:9px;color:#555;margin-top:4px}
-.ticket-row{display:flex;justify-content:space-between;gap:4px;font-size:12px;word-break:break-word}
+.ticket{background:#fff;width:220px;padding:14px 12px;font-family:'Courier New',monospace;font-size:15px;line-height:1.8;flex-shrink:0}
+.ticket-header{text-align:center;border-bottom:2px dashed #000;padding-bottom:10px;margin-bottom:10px}
+.ticket-brand{font-size:20px;font-weight:900;letter-spacing:2px}
+.ticket-sub{font-size:12px;letter-spacing:1px;color:#333;margin-top:2px;font-weight:700}
+.ticket-date{font-size:11px;color:#333;margin-top:4px;font-weight:600}
+.ticket-row{display:flex;justify-content:space-between;gap:4px;font-size:14px;word-break:break-word;font-weight:600}
 .ticket-row span:first-child{flex:1}
-.ticket-row span:last-child{flex-shrink:0;font-weight:700}
-.ticket-section{border-top:1px dashed #000;padding-top:7px;margin-top:7px}
-.ticket-label{font-weight:900;font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
-.ticket-line{font-size:12px;margin-bottom:2px;word-break:break-word}
-.ticket-total{font-size:16px;font-weight:900;text-align:center;border:2px solid #000;padding:6px;margin-top:6px}
-.ticket-footer{text-align:center;font-size:9px;color:#555;margin-top:8px;border-top:1px dashed #000;padding-top:6px}
+.ticket-row span:last-child{flex-shrink:0;font-weight:900}
+.ticket-section{border-top:1px dashed #000;padding-top:8px;margin-top:8px}
+.ticket-label{font-weight:900;font-size:13px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.ticket-line{font-size:14px;margin-bottom:3px;word-break:break-word;font-weight:600}
+.ticket-total{font-size:18px;font-weight:900;text-align:center;border:2px solid #000;padding:8px;margin-top:8px}
+.ticket-footer{text-align:center;font-size:11px;color:#333;margin-top:8px;border-top:1px dashed #000;padding-top:8px;font-weight:600}
 .ticket-actions{display:flex;gap:8px;width:100%;max-width:280px}
 .ticket-btn{flex:1;padding:14px;border:none;font-family:var(--font-d);font-size:14px;font-weight:800;letter-spacing:1px;cursor:pointer;text-transform:uppercase}
 .ticket-print{background:#fff;color:#000;border:2px solid #fff}
@@ -446,6 +446,7 @@ body.admin .card-admin-actions{display:flex}
           <div id="costoEnvio" style="font-family:var(--font-d);font-size:13px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:12px"></div>
           <div id="diasEntregaInfo" style="font-family:var(--font-d);font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;line-height:1.8"></div>
 
+          <div class="field" style="margin-bottom:10px"><label>Nombre y apellido *</label><input type="text" id="fNombre" placeholder="Juan García"></div>
           <div class="field" style="margin-bottom:10px"><label>Teléfono de contacto *</label><input type="tel" id="fTel" placeholder="11 1234-5678"></div>
           <div class="field" style="margin-bottom:10px"><label>Calle y número *</label><input type="text" id="fCalle" placeholder="Av. San Martín 1234"></div>
           <div class="field" style="margin-bottom:10px"><label>Entre calles</label><input type="text" id="fEntreCalles" placeholder="Entre Mitre y Rivadavia"></div>
@@ -1284,6 +1285,7 @@ function sendCartWA() {
 
   if (deliveryMode === 'envio') {
     const zonaSelect = document.getElementById('zonaSelect');
+   const nombre = document.getElementById('fNombre').value.trim();
     const tel = document.getElementById('fTel').value.trim();
     const calle = document.getElementById('fCalle').value.trim();
     const entreCalles = document.getElementById('fEntreCalles').value.trim();
@@ -1292,6 +1294,7 @@ function sendCartWA() {
     const zona = zonaSelect ? zonaSelect.options[zonaSelect.selectedIndex]?.text : '';
 
     if (!zonaSelect?.value && zonaSelect?.value !== '0') { showToast('Elegí tu zona 📍'); return; }
+   if (!nombre) { showToast('Ingresá tu nombre 👤'); return; }
     if (!tel) { showToast('Ingresá tu teléfono 📱'); return; }
     if (!calle) { showToast('Ingresá tu dirección 📍'); return; }
 
@@ -1317,6 +1320,7 @@ function sendCartWA() {
     if (piso) msg += `*Piso/Depto:* ${piso}\n`;
     if (refs) msg += `*Ref:* ${refs}\n`;
     msg += `*Al llegar:* ${avisoText}\n`;
+   msg += `👤 *Nombre:* ${nombre}\n`;
     msg += `📱 *Tel:* ${tel}\n\n`;
     msg += `💳 *Pago:* ${pagoText}\n`;
     msg += `\n⏰ *Horario de entrega:* 18:00 a 22:00hs\n`;
@@ -1325,7 +1329,7 @@ function sendCartWA() {
     window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
 
     // Show ticket
-    openTicket({ items, subtotal, envioCosto:costoFinal, total, zona, calle, entreCalles, piso, tel, refs, aviso:avisoText, pago:pagoText, fecha });
+    openTicket({ items, subtotal, envioCosto:costoFinal, total, zona, nombre, calle, entreCalles, piso, tel, refs, aviso:avisoText, pago:pagoText, fecha });
 
   } else {
     // RETIRO
@@ -1434,9 +1438,8 @@ function setAviso(mode, el) {
 
 // ── TICKET ──
 function openTicket(pedidoData) {
-  const { items, subtotal, envioCosto, total, zona, calle, entreCalles, piso, tel, refs, aviso, pago, fecha } = pedidoData;
+  const { items, subtotal, envioCosto, total, zona, nombre, calle, entreCalles, piso, tel, refs, aviso, pago, fecha } = pedidoData;
   document.getElementById('ticketFecha').textContent = fecha;
-
   let body = '';
   // Cliente
   body += `<div class="ticket-section"><div class="ticket-label">📦 Productos</div>`;
@@ -1455,7 +1458,8 @@ function openTicket(pedidoData) {
 
   // Entrega
   body += `<div class="ticket-section"><div class="ticket-label">🚚 Datos de entrega</div>`;
-  body += `<div><strong>Zona:</strong> ${zona}</div>`;
+ body += `<div><strong>Nombre:</strong> ${nombre}</div>`;
+    body += `<div><strong>Zona:</strong> ${zona}</div>`;
   body += `<div><strong>Dirección:</strong> ${calle}</div>`;
   if (entreCalles) body += `<div><strong>Entre:</strong> ${entreCalles}</div>`;
   if (piso) body += `<div><strong>Piso/Depto:</strong> ${piso}</div>`;
