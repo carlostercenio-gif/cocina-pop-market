@@ -1416,12 +1416,20 @@ function closeTicket() { document.getElementById('ticketOverlay').classList.remo
 
 function downloadTicket() {
   const el = document.getElementById('ticketContent');
+  const fullHeight = el.scrollHeight;
+  const fullWidth = el.scrollWidth;
   html2canvas(el, {
     scale: 3,
     backgroundColor: '#ffffff',
     useCORS: true,
-    width: 220,
-    windowWidth: 220
+    width: fullWidth,
+    height: fullHeight,
+    windowWidth: fullWidth,
+    windowHeight: fullHeight,
+    scrollX: 0,
+    scrollY: 0,
+    y: 0,
+    x: 0
   }).then(canvas => {
     const link = document.createElement('a');
     link.download = 'ticket-cocina-pop.png';
