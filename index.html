@@ -585,12 +585,9 @@ body.admin .card-admin-actions{display:flex}
     <div class="ios-banner-title">📲 Instalá la app</div>
     <button class="ios-banner-close" onclick="closeIosBanner()">✕</button>
   </div>
-  <div class="ios-steps">
-    <div class="ios-step"><div class="ios-step-num">1</div><span>Tocá el botón <strong>Compartir</strong> (□↑) abajo en Safari</span></div>
-    <div class="ios-step"><div class="ios-step-num">2</div><span>Elegí <strong>"Agregar a pantalla de inicio"</strong></span></div>
-    <div class="ios-step"><div class="ios-step-num">3</div><span>Tocá <strong>Agregar</strong> — ¡listo!</span></div>
-  </div>
-  <div class="ios-arrow">↓</div>
+  <div style="font-family:var(--font-b);font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:10px;font-style:italic">Instalala para acceder más rápido y sin internet</div>
+  <div class="ios-steps" id="iosSteps"></div>
+  <div class="ios-arrow" id="iosArrow" style="display:none">↓</div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -1488,15 +1485,67 @@ function downloadTicket() {
 function checkIosInstall() {
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isInStandalone = window.navigator.standalone === true;
-  const dismissed = localStorage.getItem('cp_ios_dismissed');
-  if (isIos && !isInStandalone && !dismissed) {
-    setTimeout(() => document.getElementById('iosBanner').classList.add('show'), 2000);
+  const isAndroidInstalled = window.matchMedia('(display-mode: standalone)').matches;
+  const stepsEl = document.getElementById('iosSteps');
+  const arrowEl = document.getElementById('iosArrow');
+
+  if (isIos && !isInStandalone) {
+    if (stepsEl) stepsEl.innerHTML = `
+      <div class="ios-step"><div class="ios-step-num">1</div><span>Abrí en <strong>Safari</strong> si no estás ahí</span></div>
+      <div class="ios-step"><div class="ios-step-num">2</div><span>Tocá el botón <strong>Compartir</strong> (□↑) abajo</span></div>
+      <div class="ios-step"><div class="ios-step-num">3</div><span>Elegí <strong>"Agregar a pantalla de inicio"</strong></span></div>`;
+    if (arrowEl) arrowEl.style.display = 'block';
+    setTimeout(() => { const b = document.getElementById('iosBanner'); if(b) b.classList.add('show'); }, 3000);
+  } else if (!isIos && !isAndroidInstalled) {
+    if (stepsEl) stepsEl.innerHTML = `
+      <div class="ios-step"><div class="ios-step-num">1</div><span>Tocá el menú <strong>⋮</strong> arriba a la derecha</span></div>
+      <div class="ios-step"><div class="ios-step-num">2</div><span>Elegí <strong>"Agregar a pantalla de inicio"</strong></span></div>
+      <div class="ios-step"><div class="ios-step-num">3</div><span>Tocá <strong>Agregar</strong> — ¡listo!</span></div>`;
+    setTimeout(() => { const b = document.getElementById('iosBanner'); if(b) b.classList.add('show'); }, 3000);
   }
 }
 function closeIosBanner() {
   document.getElementById('iosBanner').classList.remove('show');
-  localStorage.setItem('cp_ios_dismissed', '1');
+  // Re-show after 5 minutes if still not installed
+  setTimeout(checkIosInstall, 5 * 60 * 1000);
 }
+
+// ── BACK BUTTON HANDLER ──
+function pushModalState(name) {
+  history.pushState({ modal: name }, '');
+}
+window.addEventListener('popstate', (e) => {
+  // Close whichever sheet is open, in priority order
+  if (document.getElementById('ticketOverlay').classList.contains('open')) {
+    closeTicket(); return;
+  }
+  if (document.getElementById('cartOverlay').classList.contains('open')) {
+    closeCartSheet(); return;
+  }
+  if (document.getElementById('sheetOverlay').classList.contains('open')) {
+    closeSheet(); return;
+  }
+  if (document.getElementById('uploadOverlay').classList.contains('open')) {
+    closeUpload(); return;
+  }
+  if (document.getElementById('configOverlay').classList.contains('open')) {
+    closeConfig(); return;
+  }
+  if (document.getElementById('pinOverlay').classList.contains('open')) {
+    closePin(); return;
+  }
+  if (document.getElementById('iosBanner').classList.contains('show')) {
+    closeIosBanner(); return;
+  }
+});
+
+// Push state when opening any sheet so back button can close it
+const _origOpenSheet = openSheet;
+openSheet = function(id) { _origOpenSheet(id); history.pushState({modal:'sheet'}, ''); };
+const _origOpenCart = openCart;
+openCart = function() { _origOpenCart(); if(Object.keys(cart).length) history.pushState({modal:'cart'}, ''); };
+const _origOpenUpload = openUpload;
+openUpload = function(id) { _origOpenUpload(id); history.pushState({modal:'upload'}, ''); };
 // ── TOAST ──
 function showToast(msg) {
   const t=document.getElementById('toast');
