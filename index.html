@@ -415,6 +415,12 @@ body.admin .card-admin-actions{display:flex}
           <div id="retiroInfo" style="font-family:var(--font-d);font-size:11px;letter-spacing:1px;color:var(--muted);padding:8px 0;text-transform:uppercase;line-height:1.8"></div>
           <div class="field" style="margin-bottom:10px"><label>Tu nombre *</label><input type="text" id="rNombre" placeholder="Juan García"></div>
           <div class="field" style="margin-bottom:10px"><label>Teléfono / WhatsApp *</label><input type="tel" id="rTel" placeholder="11 1234-5678"></div>
+          <div class="field" style="margin-bottom:10px">
+            <label>¿Qué día venís a retirar? *</label>
+            <select id="rDia" style="width:100%;background:var(--bone);border:1.5px solid var(--border);padding:12px 14px;font-family:var(--font-b);font-size:14px;outline:none;border-radius:0">
+              <option value="">Elegí un día...</option>
+            </select>
+          </div>
           <div class="delivery-title" style="margin-top:12px">Forma de pago</div>
           <div class="pago-opts">
             <div class="pago-opt sel" id="pagoTransf" onclick="setPago('transferencia')">💳 Transferencia</div>
@@ -890,6 +896,28 @@ function openCart() {
   const aliasEnvioEl = document.getElementById('aliasTextEnvio');
   if (aliasEl) aliasEl.textContent = alias;
   if (aliasEnvioEl) aliasEnvioEl.textContent = alias;
+
+  // Populate retiro days
+  const diaSelect = document.getElementById('rDia');
+  if (diaSelect) {
+    const nombres = ['','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+    const hoy = new Date();
+    diaSelect.innerHTML = '<option value="">Elegí un día...</option>';
+    // Show next 7 days that match configured days
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(hoy);
+      d.setDate(hoy.getDate() + i);
+      const diaSemana = d.getDay() === 0 ? 7 : d.getDay();
+      if (cfg.horario.dias.includes(diaSemana)) {
+        const label = i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : `${nombres[diaSemana]} ${d.getDate()}/${d.getMonth()+1}`;
+        const opt = document.createElement('option');
+        opt.value = label;
+        opt.textContent = `${label} · ${cfg.horario.inicio} a ${cfg.horario.fin}hs`;
+        diaSelect.appendChild(opt);
+      }
+    }
+  }
+
   document.getElementById('cartOverlay').classList.add('open');
 }
 function closeCartSheet() { document.getElementById('cartOverlay').classList.remove('open'); }
@@ -1303,8 +1331,10 @@ function sendCartWA() {
     // RETIRO
     const nombre = document.getElementById('rNombre').value.trim();
     const tel = document.getElementById('rTel').value.trim();
+    const diaRetiro = document.getElementById('rDia').value;
     if (!nombre) { showToast('Ingresá tu nombre 👤'); return; }
     if (!tel) { showToast('Ingresá tu teléfono 📱'); return; }
+    if (!diaRetiro) { showToast('Elegí el día de retiro 📅'); return; }
 
     let subtotal = 0;
     let msg = '¡Hola Cocina Pop! 👋 *PEDIDO PARA RETIRAR*\n\n';
@@ -1312,7 +1342,7 @@ function sendCartWA() {
     msg += `\n*TOTAL: $${subtotal.toLocaleString()}*\n\n`;
     const dias = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
     const diasStr = cfg.horario.dias.map(d => dias[d]).join('-');
-    msg += `🏪 *Retiro:* ${diasStr} ${cfg.horario.inicio} a ${cfg.horario.fin}hs\n`;
+    msg += `🏪 *Retiro:* ${diaRetiro}\n`;
     msg += `👤 *Nombre:* ${nombre}\n`;
     msg += `📱 *Tel:* ${tel}\n`;
     const pagoText = pagoMode === 'transferencia' ? `Transferencia · Alias: ${alias}` : 'Efectivo';
@@ -1322,7 +1352,7 @@ function sendCartWA() {
 
     // Ticket retiro
     const fecha = new Date().toLocaleString('es-AR');
-    openTicketRetiro({ items, subtotal, nombre, tel, pago: pagoText, diasStr, horario: cfg.horario, fecha });
+    openTicketRetiro({ items, subtotal, nombre, tel, pago: pagoText, diaRetiro, fecha });
   }
 }
 
@@ -1445,7 +1475,7 @@ function openTicket(pedidoData) {
   document.getElementById('ticketOverlay').classList.add('open');
 }
 
-function openTicketRetiro({ items, subtotal, nombre, tel, pago, diasStr, horario, fecha }) {
+function openTicketRetiro({ items, subtotal, nombre, tel, pago, diaRetiro, fecha }) {
   document.getElementById('ticketFecha').textContent = fecha;
   let body = '';
 
@@ -1460,7 +1490,7 @@ function openTicketRetiro({ items, subtotal, nombre, tel, pago, diasStr, horario
   body += `</div>`;
 
   body += `<div class="ticket-section"><div class="ticket-label">🏪 Retiro en local</div>`;
-  body += `<div><strong>Horario:</strong> ${diasStr} ${horario.inicio} a ${horario.fin}hs</div>`;
+  body += `<div><strong>Retira:</strong> ${diaRetiro}</div>`;
   body += `<div><strong>Nombre:</strong> ${nombre}</div>`;
   body += `<div><strong>Tel:</strong> ${tel}</div>`;
   body += `</div>`;
