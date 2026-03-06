@@ -255,6 +255,26 @@ body.admin .card-admin-actions{display:flex}
 .alias-box{background:var(--black);color:var(--cream);padding:14px 16px;font-family:var(--font-d);font-size:20px;font-weight:900;letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:8px;display:none}
 .alias-box.show{display:block}
 .alias-label{font-size:10px;letter-spacing:2px;color:rgba(255,255,255,0.5);display:block;margin-bottom:4px}
+
+/* TICKET */
+.ticket-overlay{position:fixed;inset:0;background:rgba(26,25,23,0.8);z-index:550;display:none;align-items:center;justify-content:center;padding:20px}
+.ticket-overlay.open{display:flex}
+.ticket{background:#fff;width:100%;max-width:360px;padding:24px;font-family:'Courier New',monospace;font-size:12px;line-height:1.6;max-height:90vh;overflow-y:auto}
+.ticket-header{text-align:center;border-bottom:2px dashed #ccc;padding-bottom:12px;margin-bottom:12px}
+.ticket-brand{font-size:20px;font-weight:900;letter-spacing:3px}
+.ticket-sub{font-size:10px;letter-spacing:2px;color:#666}
+.ticket-row{display:flex;justify-content:space-between;gap:8px;margin-bottom:2px}
+.ticket-section{border-top:1px dashed #ccc;padding-top:10px;margin-top:10px}
+.ticket-label{font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#333}
+.ticket-actions{display:flex;gap:8px;margin-top:16px}
+.ticket-btn{flex:1;padding:12px;border:none;font-family:var(--font-d);font-size:14px;font-weight:800;letter-spacing:1px;cursor:pointer;text-transform:uppercase}
+.ticket-print{background:var(--black);color:#fff}
+.ticket-close{background:var(--bone);color:var(--black);border:1.5px solid var(--black)}
+@media print {
+  body > *:not(.ticket-overlay) { display:none !important; }
+  .ticket-overlay { position:static !important; background:none !important; padding:0 !important; }
+  .ticket-actions { display:none !important; }
+}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--black);color:var(--cream);padding:12px 24px;font-family:var(--font-d);font-size:13px;letter-spacing:2px;text-transform:uppercase;z-index:600;opacity:0;transition:all 0.3s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
@@ -374,22 +394,49 @@ body.admin .card-admin-actions{display:flex}
           <div class="delivery-opt sel" id="optRetiro" onclick="setDelivery('retiro')">🏪 Retiro</div>
           <div class="delivery-opt" id="optEnvio" onclick="setDelivery('envio')">🚚 Envío</div>
         </div>
-        <div id="retiroInfo" style="font-family:var(--font-d);font-size:11px;letter-spacing:1px;color:var(--muted);padding:8px 0;text-transform:uppercase"></div>
+
+        <!-- RETIRO INFO -->
+        <div id="retiroSection">
+          <div id="retiroInfo" style="font-family:var(--font-d);font-size:11px;letter-spacing:1px;color:var(--muted);padding:8px 0;text-transform:uppercase;line-height:1.8"></div>
+          <div class="delivery-title" style="margin-top:12px">Forma de pago</div>
+          <div class="pago-opts">
+            <div class="pago-opt sel" id="pagoTransf" onclick="setPago('transferencia')">💳 Transferencia</div>
+            <div class="pago-opt" id="pagoEfectivo" onclick="setPago('efectivo')">💵 Efectivo</div>
+          </div>
+          <div class="alias-box" id="aliasBox">
+            <span class="alias-label">Alias de pago</span>
+            <span id="aliasText">bellapop</span>
+          </div>
+        </div>
+
+        <!-- ENVIO FORM -->
         <div id="envioSection" style="display:none">
+          <div style="font-family:var(--font-d);font-size:10px;letter-spacing:2px;color:#25a244;text-transform:uppercase;margin-bottom:10px;font-weight:700">💳 Pago por transferencia únicamente</div>
+          <div class="alias-box show" style="margin-bottom:14px">
+            <span class="alias-label">Alias de pago</span>
+            <span id="aliasTextEnvio">bellapop</span>
+          </div>
+
           <select id="zonaSelect" style="width:100%;background:var(--bone);border:1.5px solid var(--border);padding:12px 14px;font-family:var(--font-b);font-size:14px;outline:none;margin-bottom:8px;border-radius:0">
-            <option value="">Elegí tu zona...</option>
+            <option value="">Seleccioná tu zona...</option>
           </select>
-          <div id="costoEnvio" style="font-family:var(--font-d);font-size:13px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:8px"></div>
-          <input class="delivery-addr show" id="deliveryAddr" placeholder="Tu dirección completa..." type="text">
-        </div>
-        <div class="delivery-title" style="margin-top:14px">Forma de pago</div>
-        <div class="pago-opts">
-          <div class="pago-opt sel" id="pagoTransf" onclick="setPago('transferencia')">💳 Transferencia</div>
-          <div class="pago-opt" id="pagoEfectivo" onclick="setPago('efectivo')">💵 Efectivo</div>
-        </div>
-        <div class="alias-box" id="aliasBox">
-          <span class="alias-label">Alias de pago</span>
-          <span id="aliasText">bellapop</span>
+          <div id="costoEnvio" style="font-family:var(--font-d);font-size:13px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:12px"></div>
+          <div id="diasEntregaInfo" style="font-family:var(--font-d);font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;line-height:1.8"></div>
+
+          <div class="field" style="margin-bottom:10px"><label>Teléfono de contacto *</label><input type="tel" id="fTel" placeholder="11 1234-5678"></div>
+          <div class="field" style="margin-bottom:10px"><label>Calle y número *</label><input type="text" id="fCalle" placeholder="Av. San Martín 1234"></div>
+          <div class="field" style="margin-bottom:10px"><label>Entre calles</label><input type="text" id="fEntreCalles" placeholder="Entre Mitre y Rivadavia"></div>
+          <div class="field" style="margin-bottom:10px"><label>Piso / Depto</label><input type="text" id="fPiso" placeholder="2° B (opcional)"></div>
+          <div class="field" style="margin-bottom:10px">
+            <label>¿Cómo avisamos al llegar?</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px">
+              <div class="pago-opt" id="avisoTimbre" onclick="setAviso('timbre',this)">🔔 Timbre</div>
+              <div class="pago-opt" id="avisoPorton" onclick="setAviso('porton',this)">🚪 Portón</div>
+              <div class="pago-opt" id="avisoBocina" onclick="setAviso('bocina',this)">📣 Bocina</div>
+              <div class="pago-opt" id="avisoLlamar" onclick="setAviso('llamar',this)">📱 Llamar</div>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:10px"><label>Referencias adicionales</label><textarea id="fRefs" placeholder="Ej: Casa blanca con reja verde, portón marrón..." style="width:100%;background:var(--bone);border:1.5px solid var(--border);padding:12px 14px;font-family:var(--font-b);font-size:14px;outline:none;resize:none;height:70px;border-radius:0"></textarea></div>
         </div>
       </div>
       <div class="cart-total-row">
@@ -484,12 +531,32 @@ body.admin .card-admin-actions{display:flex}
     </div>
 
     <div class="config-section">
-      <div class="config-section-title">🚚 Zonas de envío</div>
+      <div class="config-section-title">💰 Envío gratis desde</div>
+      <div class="field" style="margin:0"><label>Monto mínimo para envío gratis ($0 = desactivado)</label><input type="number" id="cfgMinGratis" placeholder="15000"></div>
+    </div>
+    <div class="config-section">
+      <div class="config-section-title">🚚 Zonas de envío y costos</div>
       <div id="zonasContainer"></div>
       <button class="add-zona-btn" onclick="addZona()">+ AGREGAR ZONA</button>
     </div>
 
     <button class="save-btn" onclick="saveConfigForm()">GUARDAR CONFIGURACIÓN</button>
+  </div>
+</div>
+
+<!-- TICKET -->
+<div class="ticket-overlay" id="ticketOverlay">
+  <div class="ticket" id="ticketContent">
+    <div class="ticket-header">
+      <div class="ticket-brand">COCINA POP</div>
+      <div class="ticket-sub">MARKET · PEDIDO DE ENTREGA</div>
+      <div style="margin-top:6px;font-size:11px" id="ticketFecha"></div>
+    </div>
+    <div id="ticketBody"></div>
+  </div>
+  <div class="ticket-actions" style="max-width:360px;width:100%">
+    <button class="ticket-btn ticket-close" onclick="closeTicket()">✕ CERRAR</button>
+    <button class="ticket-btn ticket-print" onclick="window.print()">🖨 IMPRIMIR</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -503,8 +570,9 @@ const WA_NUMBER = '541156444379';
 const DEFAULT_CONFIG = {
   alias: 'bellapop',
   horario: { inicio: '08:00', fin: '15:30', dias: [1,2,3,4,5] }, // lunes=1, viernes=5
+  minimoGratis: 15000,
   zonas: [
-    { nombre: 'San Justo', costo: 0 },
+    { nombre: 'San Justo', costo: 4000 },
     { nombre: 'Ramos Mejía', costo: 500 },
     { nombre: 'Morón', costo: 800 },
     { nombre: 'Haedo', costo: 600 }
@@ -785,6 +853,12 @@ function updateCartUI() {
 function openCart() {
   if (!Object.keys(cart).length) { showToast('Tu carrito está vacío'); return; }
   renderCartItems();
+  const cfg = getConfig();
+  const alias = cfg.alias || 'bellapop';
+  const aliasEl = document.getElementById('aliasText');
+  const aliasEnvioEl = document.getElementById('aliasTextEnvio');
+  if (aliasEl) aliasEl.textContent = alias;
+  if (aliasEnvioEl) aliasEnvioEl.textContent = alias;
   document.getElementById('cartOverlay').classList.add('open');
 }
 function closeCartSheet() { document.getElementById('cartOverlay').classList.remove('open'); }
@@ -1100,10 +1174,18 @@ function populateZonas() {
   sel.innerHTML = '<option value="">Elegí tu zona...</option>' +
     cfg.zonas.map(z => `<option value="${z.costo}">${z.nombre}${z.costo > 0 ? ' — $'+z.costo.toLocaleString() : ' — Gratis'}</option>`).join('');
   sel.onchange = () => {
-    const costo = sel.value;
+    const costo = parseInt(sel.value) || 0;
     const costoEl = document.getElementById('costoEnvio');
-    if (costo === '') { costoEl.textContent = ''; return; }
-    costoEl.textContent = costo === '0' ? '✓ Envío gratis' : `Costo de envío: $${parseInt(costo).toLocaleString()}`;
+    if (!sel.value) { costoEl.textContent = ''; updateCartTotal(); return; }
+    const cfg2 = getConfig();
+    const minGratis = cfg2.minimoGratis || 0;
+    const subtotal = Object.values(cart).reduce((s,i)=>s+i.price*i.qty,0);
+    const costoFinal = minGratis > 0 && subtotal >= minGratis ? 0 : costo;
+    if (costoFinal === 0) costoEl.textContent = '✓ Envío GRATIS';
+    else {
+      costoEl.textContent = `Envío: $${costoFinal.toLocaleString()}`;
+      if (minGratis > 0) costoEl.textContent += ` · Gratis desde $${minGratis.toLocaleString()}`;
+    }
     updateCartTotal();
   };
 
@@ -1142,41 +1224,74 @@ function setDelivery(mode) {
 function sendCartWA() {
   const items = Object.values(cart);
   if (!items.length) return;
-  const addr = document.getElementById('deliveryAddr') ? document.getElementById('deliveryAddr').value.trim() : '';
-  const zonaSelect = document.getElementById('zonaSelect');
-  const zona = zonaSelect ? zonaSelect.options[zonaSelect.selectedIndex]?.text : '';
-  if (deliveryMode==='envio' && !addr) { showToast('Ingresá tu dirección 📍'); return; }
-  if (deliveryMode==='envio' && !zonaSelect?.value && zonaSelect?.value !== '0') { showToast('Elegí tu zona de envío 📍'); return; }
+  const cfg = getConfig();
+  const alias = cfg.alias || 'bellapop';
 
-  let subtotal = 0;
-  let msg = '¡Hola Cocina Pop! 👋 Quiero hacer este pedido:\n\n';
-  items.forEach(i => { const s=i.price*i.qty; msg+=`• ${i.name} x${i.qty} — $${s.toLocaleString()}\n`; subtotal+=s; });
+  if (deliveryMode === 'envio') {
+    const zonaSelect = document.getElementById('zonaSelect');
+    const tel = document.getElementById('fTel').value.trim();
+    const calle = document.getElementById('fCalle').value.trim();
+    const entreCalles = document.getElementById('fEntreCalles').value.trim();
+    const piso = document.getElementById('fPiso').value.trim();
+    const refs = document.getElementById('fRefs').value.trim();
+    const zona = zonaSelect ? zonaSelect.options[zonaSelect.selectedIndex]?.text : '';
 
-  const envioCosto = getEnvioCosto();
-  const total = subtotal + envioCosto;
+    if (!zonaSelect?.value && zonaSelect?.value !== '0') { showToast('Elegí tu zona 📍'); return; }
+    if (!tel) { showToast('Ingresá tu teléfono 📱'); return; }
+    if (!calle) { showToast('Ingresá tu dirección 📍'); return; }
 
-  msg += `\n*Subtotal: $${subtotal.toLocaleString()}*\n`;
-  if (envioCosto > 0) msg += `*Envío: $${envioCosto.toLocaleString()}*\n`;
-  msg += `*TOTAL: $${total.toLocaleString()}*\n\n`;
+    let subtotal = 0;
+    items.forEach(i => subtotal += i.price * i.qty);
+    const envioCosto = getEnvioCosto();
+    const minGratis = cfg.minimoGratis || 0;
+    const costoFinal = minGratis > 0 && subtotal >= minGratis ? 0 : envioCosto;
+    const total = subtotal + costoFinal;
 
-  if (deliveryMode==='envio') {
-    msg += `🚚 *Envío a:* ${addr} (${zona})\n`;
+    const fecha = new Date().toLocaleString('es-AR');
+    const avisoText = {'timbre':'Tocar timbre','porton':'Tocar portón','bocina':'Tocar bocina','llamar':'Llamar por teléfono'}[avisoMode] || 'No especificado';
+    const pagoText = `Transferencia · Alias: ${alias}`;
+
+    let msg = '¡Hola Cocina Pop! 👋 *PEDIDO CON ENVÍO*\n\n';
+    items.forEach(i => { const s=i.price*i.qty; msg+=`• ${i.name} x${i.qty} — $${s.toLocaleString()}\n`; });
+    msg += `\n*Subtotal: $${subtotal.toLocaleString()}*\n`;
+    msg += costoFinal > 0 ? `*Envío (${zona}): $${costoFinal.toLocaleString()}*\n` : `*Envío: GRATIS ✓*\n`;
+    msg += `*TOTAL: $${total.toLocaleString()}*\n\n`;
+    msg += `🚚 *Zona:* ${zona}\n`;
+    msg += `📍 *Dirección:* ${calle}\n`;
+    if (entreCalles) msg += `*Entre:* ${entreCalles}\n`;
+    if (piso) msg += `*Piso/Depto:* ${piso}\n`;
+    if (refs) msg += `*Ref:* ${refs}\n`;
+    msg += `*Al llegar:* ${avisoText}\n`;
+    msg += `📱 *Tel:* ${tel}\n\n`;
+    msg += `💳 *Pago:* ${pagoText}\n`;
+    msg += `\n⏰ *Horario de entrega:* 18:00 a 22:00hs\n`;
+    msg += '\n¡Gracias! 🍔';
+
+    window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
+
+    // Show ticket
+    openTicket({ items, subtotal, envioCosto:costoFinal, total, zona, calle, entreCalles, piso, tel, refs, aviso:avisoText, pago:pagoText, fecha });
+
   } else {
-    const cfg = getConfig();
+    // RETIRO
+    let subtotal = 0;
+    let msg = '¡Hola Cocina Pop! 👋 *PEDIDO PARA RETIRAR*\n\n';
+    items.forEach(i => { const s=i.price*i.qty; msg+=`• ${i.name} x${i.qty} — $${s.toLocaleString()}\n`; subtotal+=s; });
+    msg += `\n*TOTAL: $${subtotal.toLocaleString()}*\n\n`;
     const dias = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
     const diasStr = cfg.horario.dias.map(d => dias[d]).join('-');
-    msg += `🏪 *Retiro en local* · ${diasStr} ${cfg.horario.inicio} a ${cfg.horario.fin}hs\n`;
+    msg += `🏪 *Retiro:* ${diasStr} ${cfg.horario.inicio} a ${cfg.horario.fin}hs\n`;
+    msg += `💳 *Pago:* ${pagoMode === 'transferencia' ? 'Transferencia · Alias: ' + alias : 'Efectivo'}\n`;
+    msg += '\n¡Gracias! 🍔';
+    window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
   }
-
-  msg += `\n💳 *Pago:* ${pagoMode === 'transferencia' ? 'Transferencia · Alias: ' + (getConfig().alias||'bellapop') : 'Efectivo'}\n`;
-  msg += '\n¡Gracias! 🍔';
-  window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
 }
 
 // ── CONFIG PANEL ──
 function openConfig() {
   const cfg = getConfig();
   document.getElementById('cfgAlias').value = cfg.alias || 'bellapop';
+  document.getElementById('cfgMinGratis').value = cfg.minimoGratis || 0;
   document.getElementById('cfgInicio').value = cfg.horario.inicio;
   document.getElementById('cfgFin').value = cfg.horario.fin;
 
@@ -1232,12 +1347,65 @@ function saveConfigForm() {
     if (input) z.costo = parseInt(input.value) || 0;
   });
 
+  cfg.minimoGratis = parseInt(document.getElementById('cfgMinGratis').value) || 0;
   saveConfig(cfg);
   closeConfig();
   checkHorario();
   showToast('Configuración guardada ✓');
 }
 
+
+// ── AVISO LLEGADA ──
+let avisoMode = '';
+function setAviso(mode, el) {
+  avisoMode = mode;
+  document.querySelectorAll('#avisoTimbre,#avisoPorton,#avisoBocina,#avisoLlamar').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ── TICKET ──
+function openTicket(pedidoData) {
+  const { items, subtotal, envioCosto, total, zona, calle, entreCalles, piso, tel, refs, aviso, pago, fecha } = pedidoData;
+  document.getElementById('ticketFecha').textContent = fecha;
+
+  let body = '';
+  // Cliente
+  body += `<div class="ticket-section"><div class="ticket-label">📦 Productos</div>`;
+  items.forEach(i => {
+    body += `<div class="ticket-row"><span>${i.name} x${i.qty}</span><span>$${(i.price*i.qty).toLocaleString()}</span></div>`;
+  });
+  body += `</div>`;
+
+  // Totales
+  body += `<div class="ticket-section">`;
+  body += `<div class="ticket-row"><span>Subtotal</span><span>$${subtotal.toLocaleString()}</span></div>`;
+  if (envioCosto > 0) body += `<div class="ticket-row"><span>Envío (${zona})</span><span>$${envioCosto.toLocaleString()}</span></div>`;
+  else body += `<div class="ticket-row"><span>Envío</span><span>GRATIS ✓</span></div>`;
+  body += `<div class="ticket-row" style="font-weight:700;font-size:14px;margin-top:4px"><span>TOTAL</span><span>$${total.toLocaleString()}</span></div>`;
+  body += `</div>`;
+
+  // Entrega
+  body += `<div class="ticket-section"><div class="ticket-label">🚚 Datos de entrega</div>`;
+  body += `<div><strong>Zona:</strong> ${zona}</div>`;
+  body += `<div><strong>Dirección:</strong> ${calle}</div>`;
+  if (entreCalles) body += `<div><strong>Entre:</strong> ${entreCalles}</div>`;
+  if (piso) body += `<div><strong>Piso/Depto:</strong> ${piso}</div>`;
+  if (refs) body += `<div><strong>Ref:</strong> ${refs}</div>`;
+  body += `<div><strong>Al llegar:</strong> ${aviso || 'No especificado'}</div>`;
+  body += `<div><strong>Tel:</strong> ${tel}</div>`;
+  body += `</div>`;
+
+  // Pago
+  body += `<div class="ticket-section"><div class="ticket-label">💳 Pago</div>`;
+  body += `<div>${pago}</div></div>`;
+
+  // Horario
+  body += `<div class="ticket-section" style="text-align:center;font-size:11px;color:#666">Entrega: 18:00 a 22:00hs</div>`;
+
+  document.getElementById('ticketBody').innerHTML = body;
+  document.getElementById('ticketOverlay').classList.add('open');
+}
+function closeTicket() { document.getElementById('ticketOverlay').classList.remove('open'); }
 // ── TOAST ──
 function showToast(msg) {
   const t=document.getElementById('toast');
