@@ -1269,8 +1269,8 @@ function setDelivery(mode) {
   deliveryMode = mode;
   document.getElementById('optRetiro').classList.toggle('sel', mode==='retiro');
   document.getElementById('optEnvio').classList.toggle('sel', mode==='envio');
+  document.getElementById('retiroSection').style.display = mode==='retiro' ? 'block' : 'none';
   document.getElementById('envioSection').style.display = mode==='envio' ? 'block' : 'none';
-  document.getElementById('retiroInfo').style.display = mode==='retiro' ? 'block' : 'none';
   if (mode==='envio') populateZonas();
   updateCartTotal();
 }
