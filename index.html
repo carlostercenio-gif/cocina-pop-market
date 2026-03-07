@@ -1350,12 +1350,24 @@ function sendCartWA() {
     msg += `💳 *Pago:* ${pagoText}\n`;
     msg += `\n⏰ *Horario de entrega:* 18:00 a 22:00hs\n`;
     msg += '\n¡Gracias! 🍔';
+window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
 
-    window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
+    // Guardar pedido en Supabase
+    const pedidoId = 'ped_' + Date.now();
+    await supabaseClient.from('pedidos').insert({
+      id: pedidoId,
+      estado: 'NUEVO',
+      data: {
+        tipo: 'envio',
+        nombre, tel, zona, calle, entreCalles, piso, refs,
+        aviso: avisoText, pago: pagoText, fecha,
+        items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+        subtotal, envioCosto: costoFinal, total
+      }
+    });
 
     // Show ticket
     openTicket({ items, subtotal, envioCosto:costoFinal, total, zona, nombre, calle, entreCalles, piso, tel, refs, aviso:avisoText, pago:pagoText, fecha });
-
   } else {
     // RETIRO
     const nombre = document.getElementById('rNombre').value.trim();
@@ -1377,7 +1389,20 @@ function sendCartWA() {
     const pagoText = pagoMode === 'transferencia' ? `Transferencia · Alias: ${alias}` : 'Efectivo';
     msg += `💳 *Pago:* ${pagoText}\n`;
     msg += '\n¡Gracias! 🍔';
-    window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
+   window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
+
+    // Guardar pedido en Supabase
+    const pedidoId = 'ped_' + Date.now();
+    await supabaseClient.from('pedidos').insert({
+      id: pedidoId,
+      estado: 'NUEVO',
+      data: {
+        tipo: 'retiro',
+        nombre, tel, diaRetiro, pago: pagoText, fecha: new Date().toLocaleString('es-AR'),
+        items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+        subtotal
+      }
+    });
 
     // Ticket retiro
     const fecha = new Date().toLocaleString('es-AR');
