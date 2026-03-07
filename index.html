@@ -1354,9 +1354,7 @@ window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
       }
     });
 
-    // Show ticket
-    openTicket({ items, subtotal, envioCosto:costoFinal, total, zona, nombre, calle, entreCalles, piso, tel, refs, aviso:avisoText, pago:pagoText, fecha });
-  } else {
+    } else {
     // RETIRO
     const nombre = document.getElementById('rNombre').value.trim();
     const tel = document.getElementById('rTel').value.trim();
@@ -1392,10 +1390,7 @@ window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
       }
     });
 
-    // Ticket retiro
-    const fecha = new Date().toLocaleString('es-AR');
-    openTicketRetiro({ items, subtotal, nombre, tel, pago: pagoText, diaRetiro, fecha });
-  }
+   }
 }
 
 // ── CONFIG PANEL ──
