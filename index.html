@@ -554,11 +554,7 @@ body.admin .card-admin-actions{display:flex}
       </div>
     </div>
 
-    <div class="config-section">
-      <div class="config-section-title">💰 Envío gratis desde</div>
-      <div class="field" style="margin:0"><label>Monto mínimo para envío gratis ($0 = desactivado)</label><input type="number" id="cfgMinGratis" placeholder="15000"></div>
-    </div>
-    <div class="config-section">
+   <div class="config-section">
       <div class="config-section-title">🚚 Zonas de envío y costos</div>
       <div id="zonasContainer"></div>
       <button class="add-zona-btn" onclick="addZona()">+ AGREGAR ZONA</button>
@@ -1236,11 +1232,13 @@ function populateZonas() {
     const cfg2 = getConfig();
     const minGratis = cfg2.minimoGratis || 0;
     const subtotal = Object.values(cart).reduce((s,i)=>s+i.price*i.qty,0);
-    const costoFinal = minGratis > 0 && subtotal >= minGratis ? 0 : costo;
+    const zonaObj = cfg.zonas.find(z => z.costo === costo) || {};
+    const minGratisZona = zonaObj.minGratis || 0;
+    const costoFinal = minGratisZona > 0 && subtotal >= minGratisZona ? 0 : costo;
     if (costoFinal === 0) costoEl.textContent = '✓ Envío GRATIS';
     else {
       costoEl.textContent = `Envío: $${costoFinal.toLocaleString()}`;
-      if (minGratis > 0) costoEl.textContent += ` · Gratis desde $${minGratis.toLocaleString()}`;
+      if (minGratisZona > 0) costoEl.textContent += ` · Gratis desde $${minGratisZona.toLocaleString()}`;
     }
     updateCartTotal();
   };
@@ -1254,8 +1252,13 @@ function populateZonas() {
 
 function getEnvioCosto() {
   const sel = document.getElementById('zonaSelect');
-  if (!sel || deliveryMode !== 'envio') return 0;
-  return parseInt(sel.value) || 0;
+  if (!sel || deliveryMode !== 'envio' || !sel.value) return 0;
+  const cfg = getConfig();
+  const costo = parseInt(sel.value) || 0;
+  const zonaObj = cfg.zonas.find(z => z.costo === costo) || {};
+  const minGratisZona = zonaObj.minGratis || 0;
+  const subtotal = Object.values(cart).reduce((s,i) => s + i.price*i.qty, 0);
+  return minGratisZona > 0 && subtotal >= minGratisZona ? 0 : costo;
 }
 
 function updateCartTotal() {
@@ -1301,8 +1304,9 @@ function sendCartWA() {
     let subtotal = 0;
     items.forEach(i => subtotal += i.price * i.qty);
     const envioCosto = getEnvioCosto();
-    const minGratis = cfg.minimoGratis || 0;
-    const costoFinal = minGratis > 0 && subtotal >= minGratis ? 0 : envioCosto;
+  const zonaObj = cfg.zonas.find(z => z.nombre === zona.split(' —')[0]) || {};
+    const minGratisZona = zonaObj.minGratis || 0;
+    const costoFinal = minGratisZona > 0 && subtotal >= minGratisZona ? 0 : envioCosto;
     const total = subtotal + costoFinal;
 
     const fecha = new Date().toLocaleString('es-AR');
@@ -1385,25 +1389,33 @@ function toggleDia(v, el) { el.classList.toggle('on'); }
 
 function renderZonasConfig(zonas) {
   document.getElementById('zonasContainer').innerHTML = zonas.map((z,i) => `
-    <div class="zona-row">
-      <div class="zona-nombre">${z.nombre}</div>
-      <span style="font-family:var(--font-d);font-size:11px;color:var(--muted)">$</span>
-      <input class="zona-input" type="number" value="${z.costo}" id="zona_costo_${i}">
-      <button class="zona-remove" onclick="removeZona(${i})">✕</button>
+    <div class="zona-row" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="zona-nombre">${z.nombre}</div>
+        <button class="zona-remove" onclick="removeZona(${i})">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div style="font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--muted);margin-bottom:4px">COSTO ENVÍO $</div>
+          <input class="zona-input" style="width:100%" type="number" value="${z.costo}" id="zona_costo_${i}" placeholder="0">
+        </div>
+        <div>
+          <div style="font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--muted);margin-bottom:4px">GRATIS DESDE $</div>
+          <input class="zona-input" style="width:100%" type="number" value="${z.minGratis||0}" id="zona_gratis_${i}" placeholder="0 = desactivado">
+        </div>
+      </div>
     </div>`).join('');
 }
-
 function removeZona(i) {
   const cfg = getConfig();
   cfg.zonas.splice(i, 1);
   renderZonasConfig(cfg.zonas);
 }
-
 function addZona() {
   const nombre = prompt('Nombre de la zona:');
   if (!nombre) return;
   const cfg = getConfig();
-  cfg.zonas.push({ nombre: nombre.trim(), costo: 0 });
+  cfg.zonas.push({ nombre: nombre.trim(), costo: 0, minGratis: 0 });
   renderZonasConfig(cfg.zonas);
 }
 
@@ -1415,9 +1427,11 @@ function saveConfigForm() {
   cfg.horario.dias = Array.from(document.querySelectorAll('#diasGrid .dia-btn.on')).map(b => parseInt(b.getAttribute('onclick').match(/\d+/)[0]));
 
   // Update zonas costs
-  cfg.zonas.forEach((z,i) => {
-    const input = document.getElementById(`zona_costo_${i}`);
-    if (input) z.costo = parseInt(input.value) || 0;
+cfg.zonas.forEach((z,i) => {
+    const inputCosto = document.getElementById(`zona_costo_${i}`);
+    const inputGratis = document.getElementById(`zona_gratis_${i}`);
+    if (inputCosto) z.costo = parseInt(inputCosto.value) || 0;
+    if (inputGratis) z.minGratis = parseInt(inputGratis.value) || 0;
   });
 
   cfg.minimoGratis = parseInt(document.getElementById('cfgMinGratis').value) || 0;
