@@ -1666,6 +1666,16 @@ const _origOpenCart = openCart;
 openCart = function() { _origOpenCart(); if(Object.keys(cart).length) history.pushState({modal:'cart'}, ''); };
 const _origOpenUpload = openUpload;
 openUpload = function(id) { _origOpenUpload(id); history.pushState({modal:'upload'}, ''); };
+
+const ESTADOS = ['NUEVO','CONFIRMADO','ARMANDO','LISTO','ENTREGADO'];
+const ESTADOS_COLOR = { NUEVO:'#e63946', CONFIRMADO:'#d4a017', ARMANDO:'#2d5a3d', LISTO:'#25a244', ENTREGADO:'#7a746a' };
+
+async function openCocina() {
+  document.getElementById('configOverlay').classList.remove('open');
+  document.getElementById('adminPanel').classList.remove('show');
+  document.getElementById('cocinaOverlay').classList.add('open');
+  await cargarPedidos();
+}
 function closeCocina() {
   document.getElementById('cocinaOverlay').classList.remove('open');
   document.getElementById('adminPanel').classList.add('show');
