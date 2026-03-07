@@ -670,11 +670,12 @@ function renderEnvioGratisBanner() {
   const text = document.getElementById('envioGratisText');
   if (!banner || !text) return;
   if (!zonesConGratis.length) { banner.style.display = 'none'; return; }
-  if (zonesConGratis.length === 1) {
+ if (zonesConGratis.length === 1) {
     text.textContent = `Envío gratis a ${zonesConGratis[0].nombre} desde $${zonesConGratis[0].minGratis.toLocaleString()}`;
   } else {
-    const min = Math.min(...zonesConGratis.map(z => z.minGratis));
-    text.textContent = `Envío gratis disponible desde $${min.toLocaleString()} — elegí tu zona`;
+    text.innerHTML = zonesConGratis.map(z => 
+      `${z.nombre} gratis desde $${z.minGratis.toLocaleString()}`
+    ).join(' &nbsp;·&nbsp; ');
   }
   banner.style.display = 'block';
 }
