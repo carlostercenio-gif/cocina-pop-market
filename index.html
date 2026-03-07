@@ -1368,7 +1368,6 @@ function sendCartWA() {
 function openConfig() {
   const cfg = getConfig();
   document.getElementById('cfgAlias').value = cfg.alias || 'bellapop';
-  document.getElementById('cfgMinGratis').value = cfg.minimoGratis || 0;
   document.getElementById('cfgInicio').value = cfg.horario.inicio;
   document.getElementById('cfgFin').value = cfg.horario.fin;
 
@@ -1433,8 +1432,6 @@ cfg.zonas.forEach((z,i) => {
     if (inputCosto) z.costo = parseInt(inputCosto.value) || 0;
     if (inputGratis) z.minGratis = parseInt(inputGratis.value) || 0;
   });
-
-  cfg.minimoGratis = parseInt(document.getElementById('cfgMinGratis').value) || 0;
   saveConfig(cfg);
   closeConfig();
   checkHorario();
