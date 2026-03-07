@@ -994,19 +994,7 @@ function setDelivery(mode) {
   document.getElementById('deliveryAddr').classList.toggle('show', mode==='envio');
 }
 
-function sendCartWA() {
-  const items = Object.values(cart);
-  if (!items.length) return;
-  const addr = document.getElementById('deliveryAddr').value.trim();
-  if (deliveryMode==='envio' && !addr) { showToast('Ingresá tu dirección 📍'); return; }
-  let msg = '¡Hola Cocina Pop! 👋 Quiero hacer este pedido:\n\n';
-  let total = 0;
-  items.forEach(i => { const s=i.price*i.qty; msg+=`• ${i.name} x${i.qty} — $${s.toLocaleString()}\n`; total+=s; });
-  msg += `\n*Total: $${total.toLocaleString()}*\n\n`;
-  msg += deliveryMode==='envio' ? `🚚 *Quiero envío a:* ${addr}\n` : `🏪 *Paso a retirar*\n`;
-  msg += '\n¡Gracias! 🍔';
-  window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
-}
+
 
 
 
@@ -1301,7 +1289,7 @@ function setDelivery(mode) {
 }
 
 // Override sendCartWA to include pago and envio cost
-function sendCartWA() {
+async function sendCartWA() {
   const items = Object.values(cart);
   if (!items.length) return;
   const cfg = getConfig();
