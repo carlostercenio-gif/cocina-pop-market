@@ -313,6 +313,9 @@ body.admin .card-admin-actions{display:flex}
 </header>
 
 <div class="horario-badge" id="horarioBadge"><div class="horario-dot" id="horarioDot"></div><span id="horarioText"></span></div>
+<div id="envioGratisBanner" style="display:none;background:var(--black);color:var(--cream);padding:10px 20px;font-family:var(--font-d);font-size:12px;letter-spacing:2px;text-transform:uppercase;text-align:center;border-bottom:1px solid #333">
+  🚚 <span id="envioGratisText"></span>
+</div>
 <div class="admin-panel" id="adminPanel">
   <div class="admin-section-title">Color de temporada</div>
   <div class="season-grid">
@@ -657,6 +660,23 @@ async function fetchProducts() {
     if (subcatsByUnit[unit] && p.subcat) subcatsByUnit[unit].add(p.subcat);
   });
   renderUnit(currentUnit);
+  renderEnvioGratisBanner();
+}
+
+function renderEnvioGratisBanner() {
+  const cfg = getConfig();
+  const zonesConGratis = cfg.zonas.filter(z => z.minGratis > 0);
+  const banner = document.getElementById('envioGratisBanner');
+  const text = document.getElementById('envioGratisText');
+  if (!banner || !text) return;
+  if (!zonesConGratis.length) { banner.style.display = 'none'; return; }
+  if (zonesConGratis.length === 1) {
+    text.textContent = `Envío gratis a ${zonesConGratis[0].nombre} desde $${zonesConGratis[0].minGratis.toLocaleString()}`;
+  } else {
+    const min = Math.min(...zonesConGratis.map(z => z.minGratis));
+    text.textContent = `Envío gratis disponible desde $${min.toLocaleString()} — elegí tu zona`;
+  }
+  banner.style.display = 'block';
 }
 
 // ── RENDER UNIT ──
