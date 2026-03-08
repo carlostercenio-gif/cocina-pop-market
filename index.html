@@ -929,7 +929,6 @@ function addCart(id, name, price, stock, cat) {
   }
   updateCartUI();
 }
-}
 function addFromSheet() {
   if (!currentProduct) return;
   const { id, name, price, stock, cat } = currentProduct;
@@ -941,7 +940,6 @@ function addFromSheet() {
   document.getElementById('sheetAddBtn').textContent = qty>=stock ? '✓ STOCK MÁXIMO' : `✓ EN PEDIDO (${qty})`;
   updateSheetStock(stock, qty);
 }
-
 function updateCartUI() {
   const total = Object.values(cart).reduce((s,i)=>s+i.qty,0);
   const sum = Object.values(cart).reduce((s,i)=>s+i.price*i.qty,0);
@@ -949,7 +947,6 @@ function updateCartUI() {
   document.getElementById('orderTotal').textContent = '$'+sum.toLocaleString('es-AR');
   document.getElementById('orderBar').classList.toggle('visible', total>0);
 }
-
 function openCart() {
   if (!Object.keys(cart).length) { showToast('Tu carrito está vacío'); return; }
   renderCartItems();
@@ -959,7 +956,6 @@ function openCart() {
   const aliasEnvioEl = document.getElementById('aliasTextEnvio');
   if (aliasEl) aliasEl.textContent = alias;
   if (aliasEnvioEl) aliasEnvioEl.textContent = alias;
-
   // Populate retiro days
   const diaSelect = document.getElementById('rDia');
   if (diaSelect) {
