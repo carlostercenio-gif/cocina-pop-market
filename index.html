@@ -731,7 +731,7 @@ function renderProducts(products) {
       addBtn = `<button class="add-btn maxed" id="btn_${p.id}" onclick="event.stopPropagation();showToast('No hay más stock 📦')">MAX</button>`;
     } else {
       addBtn = `<button class="add-btn ${inCart>0?'in-cart':''}" id="btn_${p.id}"
-        onclick="event.stopPropagation();addCart('${p.id}','${(p.nom||'').replace(/'/g,'`')}',${price},${stock})">
+       onclick="event.stopPropagation();addCart('${p.id}','${(p.nom||'').replace(/'/g,'`')}',${price},${stock},'${p.cat||''}')">
         ${inCart>0?inCart:'+'}</button>`;
     }
 
@@ -848,7 +848,7 @@ function openSheet(id) {
   const price = p.pre||0;
   const stock = getStock(p);
   const inCart = cart[id] ? cart[id].qty : 0;
-  currentProduct = { id, name: p.nom||'Producto', price, stock };
+  currentProduct = { id, name: p.nom||'Producto', price, stock, cat: p.cat||'' };
 
   initCarousel(getFotos(p), getEmoji(p));
 
@@ -880,10 +880,10 @@ function updateSheetStock(stock, inCart) {
 }
 
 // ── CART ──
-function addCart(id, name, price, stock) {
+function addCart(id, name, price, stock, cat) {
   const inCart = cart[id] ? cart[id].qty : 0;
   if (stock!==undefined && inCart>=stock) { showToast('No hay más stock disponible 📦'); return; }
-  cart[id] = { name, price, qty: inCart+1, stock };
+  cart[id] = { name, price, qty: inCart+1, stock, cat: cat||'' };
   const btn = document.getElementById('btn_'+id);
   if (btn) {
     if (stock!==undefined && cart[id].qty>=stock) {
@@ -895,14 +895,13 @@ function addCart(id, name, price, stock) {
   }
   updateCartUI();
 }
-
 function addFromSheet() {
   if (!currentProduct) return;
-  const { id, name, price, stock } = currentProduct;
+  const { id, name, price, stock, cat } = currentProduct;
   if (stock===0) { showToast('Sin stock momentáneamente 📦'); return; }
   const inCart = cart[id] ? cart[id].qty : 0;
   if (inCart>=stock) { showToast('No hay más stock disponible 📦'); return; }
-  addCart(id, name, price, stock);
+  addCart(id, name, price, stock, cat);
   const qty = cart[id].qty;
   document.getElementById('sheetAddBtn').textContent = qty>=stock ? '✓ STOCK MÁXIMO' : `✓ EN PEDIDO (${qty})`;
   updateSheetStock(stock, qty);
@@ -1360,7 +1359,7 @@ window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
         tipo: 'envio',
         nombre, tel, zona, calle, entreCalles, piso, refs,
         aviso: avisoText, pago: pagoText, fecha,
-        items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+        items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price, cat: (i.cat||'').toUpperCase() })),
         subtotal, envioCosto: costoFinal, total
       }
     });
@@ -1396,7 +1395,7 @@ window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
       data: {
         tipo: 'retiro',
         nombre, tel, diaRetiro, pago: pagoText, fecha: new Date().toLocaleString('es-AR'),
-        items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+        items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price, cat: (i.cat||'').toUpperCase() })),
         subtotal
       }
     });
@@ -1681,7 +1680,6 @@ function closeCocina() {
   document.getElementById('cocinaOverlay').classList.remove('open');
   document.getElementById('adminPanel').classList.add('show');
 }
-
 async function cargarPedidos() {
   const container = document.getElementById('pedidosList');
   container.innerHTML = '<div style="text-align:center;padding:40px;font-family:var(--font-d);letter-spacing:2px;color:var(--muted)">CARGANDO...</div>';
@@ -1712,8 +1710,9 @@ async function cargarPedidos() {
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
         ${ESTADOS.map(e => `<button onclick="cambiarEstado('${p.id}','${e}')" style="flex:1;padding:8px 4px;border:1.5px solid ${e===p.estado?color:'var(--border)'};background:${e===p.estado?color:'transparent'};color:${e===p.estado?'#fff':'var(--muted)'};font-family:var(--font-d);font-size:10px;font-weight:800;letter-spacing:0.5px;cursor:pointer">${e}</button>`).join('')}
       </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="verTicketPedido('${p.id}')" style="flex:1;background:var(--black);color:#fff;border:none;padding:10px;font-family:var(--font-d);font-size:13px;font-weight:800;letter-spacing:1px;cursor:pointer">🖨 TICKET</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="descargarTicketPedido('${p.id}')" style="flex:1;min-width:120px;background:var(--black);color:#fff;border:none;padding:10px;font-family:var(--font-d);font-size:13px;font-weight:800;letter-spacing:1px;cursor:pointer">🖨 TICKET</button>
+        <button onclick="descargarEtiquetasPedido('${p.id}')" style="flex:1;min-width:120px;background:#d4a017;color:#fff;border:none;padding:10px;font-family:var(--font-d);font-size:13px;font-weight:800;letter-spacing:1px;cursor:pointer">🏷 ETIQUETAS</button>
         <button onclick="borrarPedido('${p.id}')" style="background:#c0392b;color:#fff;border:none;padding:10px 14px;font-family:var(--font-d);font-size:13px;font-weight:800;cursor:pointer">✕</button>
       </div>
     </div>`;
@@ -1730,7 +1729,7 @@ async function borrarPedido(id) {
   await cargarPedidos();
 }
 
-function verTicketPedido(id) {
+function descargarTicketPedido(id) {
   supabaseClient.from('pedidos').select('*').eq('id', id).single().then(({ data: p }) => {
     if (!p) return;
     const d = p.data;
@@ -1739,9 +1738,72 @@ function verTicketPedido(id) {
     } else {
       openTicketRetiro({ items: d.items, subtotal: d.subtotal, nombre: d.nombre, tel: d.tel, pago: d.pago, diaRetiro: d.diaRetiro, fecha: d.fecha });
     }
+    setTimeout(() => downloadTicket(), 400);
   });
 }
 
+const UNIT_EMOJI = { FREEZER: '❄️', HELADERA: '🧊', MARKET: '🛍' };
+
+function descargarEtiquetasPedido(id) {
+  supabaseClient.from('pedidos').select('*').eq('id', id).single().then(({ data: p }) => {
+    if (!p) { showToast('Pedido no encontrado'); return; }
+    const d = p.data;
+    const grupos = {};
+    d.items.forEach(item => {
+      const cat = (item.cat || '').toUpperCase() || 'MARKET';
+      if (!grupos[cat]) grupos[cat] = [];
+      grupos[cat].push(item);
+    });
+    const nombre = d.nombre || '';
+    const linea1 = d.tipo === 'envio' ? (d.zona || '') : 'RETIRO EN LOCAL';
+    const linea2 = d.tipo === 'envio' ? (d.calle || '') + (d.piso ? ' ' + d.piso : '') : (d.diaRetiro || '');
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;top:-9999px;left:0;background:#f0ebe0;padding:14px;display:flex;flex-wrap:wrap;gap:10px;width:500px;z-index:-1';
+    Object.entries(grupos).forEach(([cat, items]) => {
+      const emoji = UNIT_EMOJI[cat] || '📦';
+      const div = document.createElement('div');
+      div.style.cssText = 'width:189px;height:151px;border:2.5px solid #1a1917;background:#fff;padding:10px 12px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;font-family:Arial,sans-serif';
+      const h = document.createElement('div');
+      h.style.cssText = 'display:flex;align-items:center;gap:6px;border-bottom:2px solid #1a1917;padding-bottom:6px';
+      h.innerHTML = `<span style="font-size:20px">${emoji}</span><span style="font-weight:900;font-size:16px;letter-spacing:1px;text-transform:uppercase;color:#1a1917">${cat}</span>`;
+      const n = document.createElement('div');
+      n.style.cssText = 'font-weight:900;font-size:14px;text-transform:uppercase;color:#1a1917;overflow:hidden;white-space:nowrap;text-overflow:ellipsis';
+      n.textContent = nombre;
+      const l1 = document.createElement('div');
+      l1.style.cssText = 'font-size:10px;color:#555;text-transform:uppercase;overflow:hidden;white-space:nowrap;text-overflow:ellipsis';
+      l1.textContent = linea1;
+      const l2 = document.createElement('div');
+      l2.style.cssText = 'font-size:10px;color:#333;overflow:hidden;white-space:nowrap;text-overflow:ellipsis';
+      l2.textContent = linea2;
+      const its = document.createElement('div');
+      its.style.cssText = 'font-size:10px;color:#1a1917;line-height:1.5;overflow:hidden;flex:1';
+      items.forEach(i => {
+        const row = document.createElement('div');
+        row.style.cssText = 'overflow:hidden;white-space:nowrap;text-overflow:ellipsis';
+        row.textContent = '· ' + i.name + ' x' + i.qty;
+        its.appendChild(row);
+      });
+      const f = document.createElement('div');
+      f.style.cssText = 'font-size:8px;color:#aaa;text-align:right;font-weight:700;letter-spacing:1px';
+      f.textContent = 'COCINA POP';
+      div.appendChild(h); div.appendChild(n); div.appendChild(l1);
+      div.appendChild(l2); div.appendChild(its); div.appendChild(f);
+      wrap.appendChild(div);
+    });
+    document.body.appendChild(wrap);
+    showToast('Generando etiquetas...');
+    setTimeout(() => {
+      html2canvas(wrap, { scale: 3, backgroundColor: '#f0ebe0', useCORS: true }).then(canvas => {
+        document.body.removeChild(wrap);
+        const link = document.createElement('a');
+        link.download = 'etiquetas-' + nombre.replace(/\s+/g, '-') + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('Etiquetas descargadas ✓');
+      }).catch(() => { document.body.removeChild(wrap); showToast('Error al generar etiquetas'); });
+    }, 300);
+  });
+}
 // ── TOAST ──
 function showToast(msg) {
   const t=document.getElementById('toast');
