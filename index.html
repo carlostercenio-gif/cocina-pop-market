@@ -1359,11 +1359,26 @@ async function sendCartWA() {
     msg += '\n¡Gracias! 🍔';
 window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
 
-    // Guardar pedido en Supabase
+    // Reservar y guardar pedido
+    const reservas = items.map(i => ({ id: Object.keys(cart).find(k => cart[k].name === i.name), qty: i.qty }));
+    for (const r of reservas) {
+      const prod = allProducts.find(x => x.id === r.id);
+      if (!prod || !prod.lotes) continue;
+      let restante = r.qty;
+      for (const lote of prod.lotes) {
+        if (restante <= 0) break;
+        const bajar = Math.min(lote.cant, restante);
+        lote.cant -= bajar;
+        restante -= bajar;
+      }
+      const newData = { ...prod }; delete newData.id;
+      await supabaseClient.from('productos').update({ data: newData }).eq('id', r.id);
+    }
     const pedidoId = 'ped_' + Date.now();
     await supabaseClient.from('pedidos').insert({
       id: pedidoId,
       estado: 'NUEVO',
+      reservas: reservas,
       data: {
         tipo: 'envio',
         nombre, tel, zona, calle, entreCalles, piso, refs,
@@ -1396,11 +1411,26 @@ window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
     msg += '\n¡Gracias! 🍔';
    window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
 
-    // Guardar pedido en Supabase
+    // Reservar y guardar pedido
+    const reservas = items.map(i => ({ id: Object.keys(cart).find(k => cart[k].name === i.name), qty: i.qty }));
+    for (const r of reservas) {
+      const prod = allProducts.find(x => x.id === r.id);
+      if (!prod || !prod.lotes) continue;
+      let restante = r.qty;
+      for (const lote of prod.lotes) {
+        if (restante <= 0) break;
+        const bajar = Math.min(lote.cant, restante);
+        lote.cant -= bajar;
+        restante -= bajar;
+      }
+      const newData = { ...prod }; delete newData.id;
+      await supabaseClient.from('productos').update({ data: newData }).eq('id', r.id);
+    }
     const pedidoId = 'ped_' + Date.now();
     await supabaseClient.from('pedidos').insert({
       id: pedidoId,
       estado: 'NUEVO',
+      reservas: reservas,
       data: {
         tipo: 'retiro',
         nombre, tel, diaRetiro, pago: pagoText, fecha: new Date().toLocaleString('es-AR'),
@@ -1734,8 +1764,25 @@ async function cambiarEstado(id, estado) {
 
 async function borrarPedido(id) {
   if (!confirm('¿Eliminar este pedido?')) return;
+  // Devolver stock reservado
+  const { data: p } = await supabaseClient.from('pedidos').select('*').eq('id', id).single();
+  if (p && p.reservas) {
+    for (const r of p.reservas) {
+      const prod = allProducts.find(x => x.id === r.id);
+      if (!prod || !prod.lotes) continue;
+      let restante = r.qty;
+      for (const lote of prod.lotes) {
+        lote.cant += restante;
+        restante = 0;
+        break;
+      }
+      const newData = { ...prod }; delete newData.id;
+      await supabaseClient.from('productos').update({ data: newData }).eq('id', r.id);
+    }
+  }
   await supabaseClient.from('pedidos').delete().eq('id', id);
   await cargarPedidos();
+  fetchProducts();
 }
 
 function descargarTicketPedido(id) {
