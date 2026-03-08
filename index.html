@@ -1818,26 +1818,7 @@ function descargarDesdePreview() {
     link.href = canvas.toDataURL('image/png');
     link.click();
 showToast('Etiquetas descargadas ✓');
-  }).catch(() => showToast('Error al generar etiquetas'));
-}
-      const f = document.createElement('div');
-      f.style.cssText = 'font-size:8px;color:#aaa;text-align:right;font-weight:700;letter-spacing:1px';
-      f.textContent = 'COCINA POP';
-      div.appendChild(h); div.appendChild(n); div.appendChild(l1);
-      div.appendChild(l2); div.appendChild(its); div.appendChild(f);
-      wrap.appendChild(div);
-    });
-    document.body.appendChild(wrap);
-    showToast('Generando etiquetas...');
-    setTimeout(() => {
-      html2canvas(wrap, { scale: 3, backgroundColor: '#f0ebe0', useCORS: true }).then(canvas => {
-        document.body.removeChild(wrap);
-        const link = document.createElement('a');
-        link.download = 'etiquetas-' + nombre.replace(/\s+/g, '-') + '.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        showToast('Etiquetas descargadas ✓');
-  }).catch(() => showToast('Error al generar etiquetas'));
+ }).catch(() => showToast('Error al generar etiquetas'));
 }
 // ── TOAST ──
 function showToast(msg) {
