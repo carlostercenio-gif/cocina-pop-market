@@ -1069,15 +1069,15 @@ async function deleteProduct(id, name) {
   fetchProducts();
 }
 
-// ── TOGGLE VISIBLE ──
 async function toggleVisible(id, currentlyHidden) {
   const p = allProducts.find(x=>x.id===id);
   if (!p) return;
-  const newData = { ...p, visible: !currentlyHidden };
+  const newVisible = currentlyHidden ? true : false;
+  const newData = { ...p, visible: newVisible };
   delete newData.id;
   const { error } = await supabaseClient.from('productos').update({ data: newData }).eq('id', id);
   if (error) { showToast('Error al actualizar'); return; }
-  showToast(currentlyHidden ? 'Producto visible ✓' : 'Producto oculto');
+  showToast(newVisible ? 'Producto visible ✓' : 'Producto oculto');
   fetchProducts();
 }
 
