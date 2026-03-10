@@ -671,15 +671,24 @@ const DEFAULT_CONFIG = {
     { nombre: 'Haedo', costo: 600 }
   ]
 };
+async function loadConfigFromSupabase() {
+  const { data, error } = await supabaseClient.from('config').select('data').eq('id','main').single();
+  if (error || !data || !data.data || !Object.keys(data.data).length) return;
+  localStorage.setItem('cp_config', JSON.stringify({ ...DEFAULT_CONFIG, ...data.data }));
+  checkHorario();
+  renderEntregaBanner();
+  renderEnvioGratisBanner();
+}
 function getConfig() {
   try { return JSON.parse(localStorage.getItem('cp_config')) || DEFAULT_CONFIG; }
   catch { return DEFAULT_CONFIG; }
 }
-function saveConfig(cfg) { localStorage.setItem('cp_config', JSON.stringify(cfg)); }
+async function saveConfig(cfg) {
+  localStorage.setItem('cp_config', JSON.stringify(cfg));
+  await supabaseClient.from('config').update({ data: cfg, updated_at: new Date().toISOString() }).eq('id','main');
+}
 const PIN_CODE = '1979';
-
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, ANON_KEY);
-
 let allProducts = [];
 let currentUnit = 'FREEZER';
 let currentSubcat = 'Todos';
@@ -1964,6 +1973,7 @@ if (savedAccent) {
 }
 fetchProducts();
 checkHorario();
+loadConfigFromSupabase();
 </script>
 </body>
 </html>
