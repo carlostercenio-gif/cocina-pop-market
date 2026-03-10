@@ -721,11 +721,15 @@ async function fetchProducts() {
 }
 function renderEntregaBanner() {
   const cfg = getConfig();
-  const entrega = cfg.entrega || { dias: [1,3,5], inicio: '18:00', fin: '22:00' };
+  const entrega = cfg.entrega || { dias: [], inicio: '', fin: '' };
+  const banner = document.getElementById('entregaBanner');
+  const el = document.getElementById('entregaBannerText');
+  if (!banner || !el) return;
+  if (!entrega.dias || !entrega.dias.length) { banner.style.display='none'; return; }
   const dias = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
   const diasStr = entrega.dias.map(d => dias[d]).join(' · ');
-  const el = document.getElementById('entregaBannerText');
-  if (el) el.textContent = `Entregas: ${diasStr} · ${entrega.inicio} a ${entrega.fin}hs`;
+  banner.style.display = 'block';
+  el.textContent = `Entregas: ${diasStr} · ${entrega.inicio} a ${entrega.fin}hs`;
 }
 
 function renderEnvioGratisBanner() {
