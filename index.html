@@ -819,7 +819,7 @@ function renderProducts(products) {
       </div>
       <div class="card-body">
         <div class="card-name">${p.nom||'Producto'}</div>
-        <div class="card-desc">${p.descripcion||''}</div>
+        <div class="card-desc" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${p.descripcion||''}</div>
         <div class="card-footer">
           <div class="card-price"><span>$</span>${price.toLocaleString('es-AR')}</div>
           ${addBtn}
