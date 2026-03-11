@@ -1164,7 +1164,10 @@ function openUpload(id) {
       document.getElementById('fPre').value = p.pre||'';
       existingFotos = getFotos(p);
       renderPhotosPreview();
-      if (p.cat) pickUnit(p.cat.toUpperCase(), document.querySelector(`.unit-pick:nth-child(${['FREEZER','HELADERA','MARKET'].indexOf(p.cat.toUpperCase())+1})`));
+      if (p.cat) {
+  pickUnit(p.cat.toUpperCase(), document.querySelector(`.unit-pick:nth-child(${['FREEZER','HELADERA','MARKET'].indexOf(p.cat.toUpperCase())+1})`));
+  if (p.subcat) { const sel = document.getElementById('fSubcat'); sel.value = p.subcat; }
+}
     }
   }
   document.getElementById('uploadOverlay').classList.add('open');
