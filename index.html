@@ -1419,7 +1419,6 @@ async function sendCartWA() {
     window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
     mostrarConfirm('envio', nombre, total);
 
-    // Reservar y guardar pedido
     const reservas = items.map(i => ({ id: Object.keys(cart).find(k => cart[k].name === i.name), qty: i.qty }));
     for (const r of reservas) {
       const prod = allProducts.find(x => x.id === r.id);
@@ -1447,6 +1446,17 @@ async function sendCartWA() {
         subtotal, envioCosto: costoFinal, total
       }
     });
+    const historialItems = items.map(i => ({
+      fecha: new Date().toISOString(),
+      tipo: 'VENTA',
+      producto: i.name,
+      cantidad: i.qty,
+      monto: i.price * i.qty,
+      detalle: `Venta online · Envío a ${zona}`
+    }));
+    const { data: histData } = await supabaseClient.from('historial').select('data').eq('id','admin').single();
+    const histActual = histData?.data || [];
+    await supabaseClient.from('historial').upsert({ id: 'admin', data: [...historialItems, ...histActual] });
 
     } else {
     // RETIRO
@@ -1499,7 +1509,17 @@ async function sendCartWA() {
         subtotal
       }
     });
-
+    const historialItemsR = items.map(i => ({
+      fecha: new Date().toISOString(),
+      tipo: 'VENTA',
+      producto: i.name,
+      cantidad: i.qty,
+      monto: i.price * i.qty,
+      detalle: `Venta online · Retiro en local`
+    }));
+    const { data: histDataR } = await supabaseClient.from('historial').select('data').eq('id','admin').single();
+    const histActualR = histDataR?.data || [];
+    await supabaseClient.from('historial').upsert({ id: 'admin', data: [...historialItemsR, ...histActualR] });
    }
 }
 
