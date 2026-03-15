@@ -1493,6 +1493,7 @@ async function sendCartWA() {
    msg += `💳 *Pago:* ${pagoText}\n`;
     msg += '\n¡Gracias! 🍔';
     window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
+    clearCart();
     mostrarConfirm('retiro', nombre, subtotal);
 
     // Reservar y guardar pedido
@@ -1975,6 +1976,14 @@ showToast('Etiquetas descargadas ✓');
  }).catch(() => showToast('Error al generar etiquetas'));
 }
 // ── CONFIRM ──
+function clearCart() {
+  Object.keys(cart).forEach(id => {
+    delete cart[id];
+    const btn = document.getElementById('btn_' + id);
+    if (btn) { btn.textContent = '+'; btn.className = 'add-btn'; }
+  });
+  updateCartUI();
+}
 function mostrarConfirm(tipo, nombre, total) {
   const el = document.getElementById('confirmResumen');
   if (el) el.textContent = tipo === 'envio' ? `Envío a ${nombre} · $${total.toLocaleString()}` : `Retiro · ${nombre} · $${total.toLocaleString()}`;
