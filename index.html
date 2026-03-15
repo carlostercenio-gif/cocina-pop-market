@@ -1429,6 +1429,7 @@ async function sendCartWA() {
     msg += `\n⏰ *Horario de entrega:* 18:00 a 22:00hs\n`;
     msg += '\n¡Gracias! 🍔';
     window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
+    clearCart();
     mostrarConfirm('envio', nombre, total);
 
     const reservas = items.map(i => ({ id: Object.keys(cart).find(k => cart[k].name === i.name), qty: i.qty }));
