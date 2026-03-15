@@ -1762,8 +1762,8 @@ openCart = function() { _origOpenCart(); if(Object.keys(cart).length) history.pu
 const _origOpenUpload = openUpload;
 openUpload = function(id) { _origOpenUpload(id); history.pushState({modal:'upload'}, ''); };
 
-const ESTADOS = ['NUEVO','CONFIRMADO','ARMANDO','LISTO','ENTREGADO'];
-const ESTADOS_COLOR = { NUEVO:'#e63946', CONFIRMADO:'#d4a017', ARMANDO:'#2d5a3d', LISTO:'#25a244', ENTREGADO:'#7a746a' };
+const ESTADOS = ['NUEVO','CONFIRMADO','ARMANDO','LISTO','ENTREGADO','CANCELADO'];
+const ESTADOS_COLOR = { NUEVO:'#e63946', CONFIRMADO:'#d4a017', ARMANDO:'#2d5a3d', LISTO:'#25a244', ENTREGADO:'#7a746a', CANCELADO:'#636e72' };
 
 async function openCocina() {
   document.getElementById('configOverlay').classList.remove('open');
@@ -1814,6 +1814,39 @@ async function cargarPedidos() {
   }).join('');
 }
 async function cambiarEstado(id, estado) {
+  if (estado === 'CONFIRMADO') {
+    const { data: p } = await supabaseClient.from('pedidos').select('*').eq('id', id).single();
+    if (p && p.reservas) {
+      for (const r of p.reservas) {
+        const prod = allProducts.find(x => x.id === r.id);
+        if (!prod || !prod.lotes) continue;
+        let restante = r.qty;
+        for (const lote of prod.lotes) {
+          if (restante <= 0) break;
+          const bajar = Math.min(lote.cant, restante);
+          lote.cant -= bajar;
+          restante -= bajar;
+        }
+        prod.lotes = prod.lotes.filter(l => l.cant > 0);
+        const newData = { ...prod }; delete newData.id;
+        await supabaseClient.from('productos').update({ data: newData }).eq('id', r.id);
+      }
+    }
+    if (p && p.data && p.data.items) {
+      const { data: histData } = await supabaseClient.from('historial').select('data').eq('id','admin').single();
+      const histActual = histData?.data || [];
+      const nuevos = p.data.items.map(i => ({
+        fecha: new Date().toISOString(),
+        tipo: 'VENTA',
+        producto: i.name,
+        cantidad: i.qty,
+        monto: i.price * i.qty,
+        detalle: p.data.tipo === 'envio' ? `Venta online · Envío a ${p.data.zona}` : 'Venta online · Retiro en local'
+      }));
+      await supabaseClient.from('historial').upsert({ id: 'admin', data: [...nuevos, ...histActual] });
+    }
+    fetchProducts();
+  }
   await supabaseClient.from('pedidos').update({ estado, updated_at: new Date().toISOString() }).eq('id', id);
   await cargarPedidos();
 }
@@ -1822,25 +1855,10 @@ async function borrarPedido(id) {
   if (!confirm('¿Eliminar este pedido?')) return;
   // Devolver stock reservado
   const { data: p } = await supabaseClient.from('pedidos').select('*').eq('id', id).single();
-  if (p && p.reservas) {
-    for (const r of p.reservas) {
-      const prod = allProducts.find(x => x.id === r.id);
-      if (!prod || !prod.lotes) continue;
-      let restante = r.qty;
-      for (const lote of prod.lotes) {
-        lote.cant += restante;
-        restante = 0;
-        break;
-      }
-      const newData = { ...prod }; delete newData.id;
-      await supabaseClient.from('productos').update({ data: newData }).eq('id', r.id);
-    }
-  }
   await supabaseClient.from('pedidos').delete().eq('id', id);
   await cargarPedidos();
   fetchProducts();
 }
-
 function descargarTicketPedido(id) {
   supabaseClient.from('pedidos').select('*').eq('id', id).single().then(({ data: p }) => {
     if (!p) return;
