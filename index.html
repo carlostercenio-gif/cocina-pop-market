@@ -1467,8 +1467,7 @@ async function sendCartWA() {
    msg += `💳 *Pago:* ${pagoText}\n`;
     msg += '\n¡Gracias! 🍔';
     window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
-    clearCart();
-   mostrarConfirm('retiro', nombre, subtotal);
+    mostrarConfirm('retiro', nombre, subtotal);
     const reservas = items.map(i => ({ id: Object.keys(cart).find(k => cart[k].name === i.name), qty: i.qty }));
     const pedidoId = 'ped_' + Date.now();
     await supabaseClient.from('pedidos').insert({
