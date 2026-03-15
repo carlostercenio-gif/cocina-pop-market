@@ -2004,6 +2004,12 @@ function showToast(msg) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
 }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    fetchProducts();
+  }
+});
+
 // ── INIT ──
 const savedAccent = localStorage.getItem('cp_accent');
 if (savedAccent) {
