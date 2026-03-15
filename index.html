@@ -1428,10 +1428,8 @@ async function sendCartWA() {
     msg += `💳 *Pago:* ${pagoText}\n`;
     msg += `\n⏰ *Horario de entrega:* 18:00 a 22:00hs\n`;
     msg += '\n¡Gracias! 🍔';
-    window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
-    clearCart();
+   window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
     mostrarConfirm('envio', nombre, total);
-
     const reservas = items.map(i => ({ id: Object.keys(cart).find(k => cart[k].name === i.name), qty: i.qty }));
     const pedidoId = 'ped_' + Date.now();
     await supabaseClient.from('pedidos').insert({
@@ -1446,18 +1444,7 @@ async function sendCartWA() {
         subtotal, envioCosto: costoFinal, total
       }
     });
-    const historialItems = items.map(i => ({
-      fecha: new Date().toISOString(),
-      tipo: 'VENTA',
-      producto: i.name,
-      cantidad: i.qty,
-      monto: i.price * i.qty,
-      detalle: `Venta online · Envío a ${zona}`
-    }));
-    const { data: histData } = await supabaseClient.from('historial').select('data').eq('id','admin').single();
-    const histActual = histData?.data || [];
-    await supabaseClient.from('historial').upsert({ id: 'admin', data: [...historialItems, ...histActual] });
-
+    clearCart();
     } else {
     // RETIRO
     const nombre = document.getElementById('rNombre').value.trim();
@@ -1481,9 +1468,8 @@ async function sendCartWA() {
     msg += '\n¡Gracias! 🍔';
     window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
     clearCart();
-    mostrarConfirm('retiro', nombre, subtotal);
-
-   const reservas = items.map(i => ({ id: Object.keys(cart).find(k => cart[k].name === i.name), qty: i.qty }));
+   mostrarConfirm('retiro', nombre, subtotal);
+    const reservas = items.map(i => ({ id: Object.keys(cart).find(k => cart[k].name === i.name), qty: i.qty }));
     const pedidoId = 'ped_' + Date.now();
     await supabaseClient.from('pedidos').insert({
       id: pedidoId,
@@ -1496,20 +1482,9 @@ async function sendCartWA() {
         subtotal
       }
     });
-    const historialItemsR = items.map(i => ({
-      fecha: new Date().toISOString(),
-      tipo: 'VENTA',
-      producto: i.name,
-      cantidad: i.qty,
-      monto: i.price * i.qty,
-      detalle: `Venta online · Retiro en local`
-    }));
-    const { data: histDataR } = await supabaseClient.from('historial').select('data').eq('id','admin').single();
-    const histActualR = histDataR?.data || [];
-    await supabaseClient.from('historial').upsert({ id: 'admin', data: [...historialItemsR, ...histActualR] });
+    clearCart();
    }
 }
-
 // ── CONFIG PANEL ──
 function openConfig() {
   const cfg = getConfig();
