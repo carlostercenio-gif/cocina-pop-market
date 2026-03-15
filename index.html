@@ -2012,46 +2012,28 @@ loadConfigFromSupabase();
 
 // ── NOTIFICACIONES ──
 function toggleNotificaciones() {
-  if (!('Notification' in window)) { showToast('Tu navegador no soporta notificaciones'); return; }
-  if (Notification.permission === 'granted' && localStorage.getItem('cp_notif') === '1') {
-    localStorage.removeItem('cp_notif');
-    document.getElementById('btnNotif').textContent = '🔔 ACTIVAR NOTIFICACIONES';
-    showToast('Notificaciones desactivadas');
-    if (window._pedidosChannel) { window._pedidosChannel.unsubscribe(); window._pedidosChannel = null; }
-  } else {
-    Notification.requestPermission().then(perm => {
-      if (perm === 'granted') {
-        localStorage.setItem('cp_notif', '1');
-        document.getElementById('btnNotif').textContent = '🔕 DESACTIVAR NOTIFICACIONES';
-        showToast('Notificaciones activadas ✓');
-        iniciarEscuchaPedidos();
-      } else {
-        showToast('Permiso denegado — activalo en ajustes del celu');
-      }
-    });
-  }
+  if (!window.OneSignalDeferred) { showToast('OneSignal no está listo'); return; }
+  OneSignalDeferred.push(async function(OneSignal) {
+    const suscripto = await OneSignal.User.PushSubscription.optedIn;
+    if (suscripto) {
+      await OneSignal.User.PushSubscription.optOut();
+      localStorage.removeItem('cp_notif');
+      document.getElementById('btnNotif').textContent = '🔔 ACTIVAR NOTIFICACIONES';
+      showToast('Notificaciones desactivadas');
+    } else {
+      await OneSignal.User.PushSubscription.optIn();
+      localStorage.setItem('cp_notif', '1');
+      document.getElementById('btnNotif').textContent = '🔕 DESACTIVAR NOTIFICACIONES';
+      showToast('Notificaciones activadas ✓');
+    }
+  });
 }
 
-function iniciarEscuchaPedidos() {
-  if (window._pedidosChannel) return;
-  window._pedidosChannel = supabaseClient
-    .channel('pedidos-nuevos')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos' }, payload => {
-      const d = payload.new?.data;
-      if (!d) return;
-      const titulo = d.tipo === 'envio' ? `🚚 Nuevo pedido — ${d.nombre}` : `🏪 Nuevo pedido — ${d.nombre}`;
-      const cuerpo = d.items?.map(i => `${i.name} x${i.qty}`).join(', ') || '';
-      new Notification(titulo, { body: cuerpo, icon: '/icon-512.png' });
-    })
-    .subscribe();
-}
-
-if (localStorage.getItem('cp_notif') === '1' && Notification.permission === 'granted') {
+if (localStorage.getItem('cp_notif') === '1') {
   setTimeout(() => {
     const btn = document.getElementById('btnNotif');
     if (btn) btn.textContent = '🔕 DESACTIVAR NOTIFICACIONES';
   }, 500);
-  iniciarEscuchaPedidos();
 }
 </script>
 </body>
