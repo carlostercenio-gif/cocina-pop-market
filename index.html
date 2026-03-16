@@ -346,8 +346,8 @@ body.admin .card-admin-actions{display:flex}
   <button class="admin-btn" onclick="openUpload(null)">＋ AGREGAR PRODUCTO</button>
  <button class="admin-btn sec" onclick="openConfig()">⚙️ CONFIGURACIÓN</button>
 <button class="admin-btn sec" id="btnNotif" onclick="toggleNotificaciones()">🔔 ACTIVAR NOTIFICACIONES</button>
+<div id="visitasCounter" style="font-family:var(--font-d);font-size:12px;letter-spacing:1px;color:#888;padding:4px 0;text-transform:uppercase"></div>
 </div>
-
 <div class="hero">
   <div class="hero-inner">
     <div class="hero-bg"></div>
@@ -1144,7 +1144,7 @@ function updateAttemptsUI() {
 
 // ── ADMIN ──
 function isAdmin() { return document.body.classList.contains('admin'); }
-function enterAdmin() { document.body.classList.add('admin'); document.getElementById('adminBanner').classList.add('show'); document.getElementById('adminPanel').classList.add('show'); fetchProducts(); }
+function enterAdmin() { document.body.classList.add('admin'); document.getElementById('adminBanner').classList.add('show'); document.getElementById('adminPanel').classList.add('show'); fetchProducts(); mostrarVisitas(); }
 function exitAdmin() { document.body.classList.remove('admin'); document.getElementById('adminBanner').classList.remove('show'); document.getElementById('adminPanel').classList.remove('show'); fetchProducts(); }
 function setAccent(color,el) {
   document.documentElement.style.setProperty('--accent',color);
@@ -1987,6 +1987,26 @@ if (savedAccent) {
     }
   });
 }
+async function registrarVisita() {
+  const hoy = new Date().toLocaleDateString('es-AR');
+  const { data } = await supabaseClient.from('visitas').select('*').eq('id','stats').single();
+  if (!data) return;
+  const esNuevoDia = data.fecha_hoy !== hoy;
+  await supabaseClient.from('visitas').update({
+    total: data.total + 1,
+    hoy: esNuevoDia ? 1 : data.hoy + 1,
+    fecha_hoy: hoy
+  }).eq('id','stats');
+}
+
+async function mostrarVisitas() {
+  const { data } = await supabaseClient.from('visitas').select('*').eq('id','stats').single();
+  if (!data) return;
+  const el = document.getElementById('visitasCounter');
+  if (el) el.textContent = `👁 ${data.total.toLocaleString()} visitas totales · ${data.hoy} hoy`;
+}
+
+registrarVisita();
 fetchProducts();
 checkHorario();
 loadConfigFromSupabase();
