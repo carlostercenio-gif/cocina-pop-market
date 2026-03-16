@@ -1878,50 +1878,91 @@ function descargarEtiquetasPedido(id) {
   supabaseClient.from('pedidos').select('*').eq('id', id).single().then(({ data: p }) => {
     if (!p) { showToast('Pedido no encontrado'); return; }
     const d = p.data;
-    const grupos = {};
-    d.items.forEach(item => {
-      const cat = (item.cat || '').toUpperCase() || 'MARKET';
-      if (!grupos[cat]) grupos[cat] = [];
-      grupos[cat].push(item);
-    });
     const nombre = d.nombre || '';
     const linea1 = d.tipo === 'envio' ? (d.zona || '') : 'RETIRO EN LOCAL';
     const linea2 = d.tipo === 'envio' ? (d.calle || '') + (d.piso ? ' ' + d.piso : '') : (d.diaRetiro || '');
 
-    // Construir etiquetas en el preview
     const wrap = document.getElementById('etiquetasWrap');
     wrap.innerHTML = '';
-    Object.entries(grupos).forEach(([cat, items]) => {
-      const emoji = UNIT_EMOJI[cat] || '📦';
+
+    const MAX_POR_ETIQUETA = 4;
+    const todosLosItems = d.items;
+    const totalEtiquetas = Math.ceil(todosLosItems.length / MAX_POR_ETIQUETA);
+
+    for (let e = 0; e < totalEtiquetas; e++) {
+      const itemsEsta = todosLosItems.slice(e * MAX_POR_ETIQUETA, (e + 1) * MAX_POR_ETIQUETA);
+
       const div = document.createElement('div');
-      div.style.cssText = 'width:189px;height:151px;border:2.5px solid #1a1917;background:#fff;padding:10px 12px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;font-family:Arial,sans-serif';
+      div.style.cssText = 'width:189px;min-height:151px;border:2.5px solid #1a1917;background:#fff;padding:10px 12px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;font-family:Arial,sans-serif;margin-bottom:4px';
+
       const h = document.createElement('div');
-      h.style.cssText = 'display:flex;align-items:center;gap:6px;border-bottom:2px solid #1a1917;padding-bottom:6px';
-      h.innerHTML = `<span style="font-size:20px">${emoji}</span><span style="font-weight:900;font-size:16px;letter-spacing:1px;text-transform:uppercase;color:#1a1917">${cat}</span>`;
-      const n = document.createElement('div');
-      n.style.cssText = 'font-weight:900;font-size:14px;text-transform:uppercase;color:#1a1917;overflow:hidden;white-space:nowrap;text-overflow:ellipsis';
-      n.textContent = nombre;
-      const l1 = document.createElement('div');
-      l1.style.cssText = 'font-size:10px;color:#555;text-transform:uppercase;overflow:hidden;white-space:nowrap;text-overflow:ellipsis';
-      l1.textContent = linea1;
-      const l2 = document.createElement('div');
-      l2.style.cssText = 'font-size:10px;color:#333;overflow:hidden;white-space:nowrap;text-overflow:ellipsis';
-      l2.textContent = linea2;
+      h.style.cssText = 'display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1a1917;padding-bottom:6px;margin-bottom:6px';
+      h.innerHTML = `<span style="font-weight:900;font-size:14px;text-transform:uppercase;color:#1a1917">${nombre}</span>${totalEtiquetas > 1 ? `<span style="font-size:10px;color:#555;font-weight:700">${e+1}/${totalEtiquetas}</span>` : ''}`;
+
       const its = document.createElement('div');
-      its.style.cssText = 'font-size:10px;color:#1a1917;line-height:1.5;overflow:hidden;flex:1';
-      items.forEach(i => {
+      its.style.cssText = 'font-size:11px;color:#1a1917;line-height:1.7;flex:1';
+      itemsEsta.forEach(i => {
         const row = document.createElement('div');
-        row.style.cssText = 'overflow:hidden;white-space:nowrap;text-overflow:ellipsis';
-        row.textContent = '· ' + i.name + ' x' + i.qty;
+        row.style.cssText = 'overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:700';
+        row.textContent = `· ${i.name} x${i.qty}`;
         its.appendChild(row);
       });
-      const f = document.createElement('div');
-      f.style.cssText = 'font-size:8px;color:#aaa;text-align:right;font-weight:700;letter-spacing:1px';
-      f.textContent = 'COCINA POP';
-      div.appendChild(h); div.appendChild(n); div.appendChild(l1);
-      div.appendChild(l2); div.appendChild(its); div.appendChild(f);
+
+      const footer = document.createElement('div');
+      footer.style.cssText = 'border-top:1px solid #eee;padding-top:6px;margin-top:6px';
+      footer.innerHTML = `<div style="font-size:10px;color:#555;text-transform:uppercase;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${linea1}</div>
+        <div style="font-size:10px;color:#333;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${linea2}</div>
+        <div style="font-size:8px;color:#aaa;text-align:right;font-weight:700;letter-spacing:1px;margin-top:2px">COCINA POP</div>`;
+
+      div.appendChild(h);
+      div.appendChild(its);
+      div.appendChild(footer);
       wrap.appendChild(div);
-    });
+    }
+
+    wrap.dataset.nombre = nombre;
+    document.getElementById('etiquetasOverlay').classList.add('open');
+  });
+}
+
+ // Construir etiquetas en el preview
+    const wrap = document.getElementById('etiquetasWrap');
+    wrap.innerHTML = '';
+
+    const MAX_POR_ETIQUETA = 4;
+    const todosLosItems = d.items;
+    const totalEtiquetas = Math.ceil(todosLosItems.length / MAX_POR_ETIQUETA);
+
+    for (let e = 0; e < totalEtiquetas; e++) {
+      const itemsEsta = todosLosItems.slice(e * MAX_POR_ETIQUETA, (e + 1) * MAX_POR_ETIQUETA);
+
+      const div = document.createElement('div');
+      div.style.cssText = 'width:189px;min-height:151px;border:2.5px solid #1a1917;background:#fff;padding:10px 12px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;font-family:Arial,sans-serif;margin-bottom:4px';
+
+      const h = document.createElement('div');
+      h.style.cssText = 'display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1a1917;padding-bottom:6px;margin-bottom:6px';
+      h.innerHTML = `<span style="font-weight:900;font-size:14px;text-transform:uppercase;color:#1a1917">${nombre}</span>${totalEtiquetas > 1 ? `<span style="font-size:10px;color:#555;font-weight:700">${e+1}/${totalEtiquetas}</span>` : ''}`;
+
+      const its = document.createElement('div');
+      its.style.cssText = 'font-size:11px;color:#1a1917;line-height:1.7;flex:1';
+      itemsEsta.forEach(i => {
+        const row = document.createElement('div');
+        row.style.cssText = 'overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:700';
+        row.textContent = `· ${i.name} x${i.qty}`;
+        its.appendChild(row);
+      });
+
+      const footer = document.createElement('div');
+      footer.style.cssText = 'border-top:1px solid #eee;padding-top:6px;margin-top:6px';
+      footer.innerHTML = `<div style="font-size:10px;color:#555;text-transform:uppercase;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${linea1}</div>
+        <div style="font-size:10px;color:#333;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${linea2}</div>
+        <div style="font-size:8px;color:#aaa;text-align:right;font-weight:700;letter-spacing:1px;margin-top:2px">COCINA POP</div>`;
+
+      div.appendChild(h);
+      div.appendChild(its);
+      div.appendChild(footer);
+      wrap.appendChild(div);
+    }
 
     // Guardar nombre para la descarga
     wrap.dataset.nombre = nombre;
