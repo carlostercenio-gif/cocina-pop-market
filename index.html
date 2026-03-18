@@ -1468,9 +1468,24 @@ async function sendCartWA() {
     const pagoText = pagoMode === 'transferencia' ? `Transferencia · Alias: ${alias}` : 'Efectivo';
    msg += `💳 *Pago:* ${pagoText}\n`;
     msg += '\n¡Gracias! 🍔';
-    window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
+   window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
     mostrarConfirm('retiro', nombre, subtotal);
     const reservas = items.map(i => ({ id: Object.keys(cart).find(k => cart[k].name === i.name), qty: i.qty }));
+    // Bajar stock al entrar el pedido
+    for (const r of reservas) {
+      const prod = allProducts.find(x => x.id === r.id);
+      if (!prod || !prod.lotes) continue;
+      let restante = r.qty;
+      for (const lote of prod.lotes) {
+        if (restante <= 0) break;
+        const bajar = Math.min(lote.cant, restante);
+        lote.cant -= bajar;
+        restante -= bajar;
+      }
+      prod.lotes = prod.lotes.filter(l => l.cant > 0);
+      const newData = { ...prod }; delete newData.id;
+      await supabaseClient.from('productos').update({ data: newData }).eq('id', r.id);
+    }
     const pedidoId = 'ped_' + Date.now();
     await supabaseClient.from('pedidos').insert({
       id: pedidoId,
@@ -1804,7 +1819,7 @@ async function cargarPedidos() {
         $${(d.total||d.subtotal).toLocaleString()}
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-        ${ESTADOS.map(e => `<button onclick="cambiarEstado('${p.id}','${e}')" style="flex:1;padding:8px 4px;border:1.5px solid ${e===p.estado?color:'var(--border)'};background:${e===p.estado?color:'transparent'};color:${e===p.estado?'#fff':'var(--muted)'};font-family:var(--font-d);font-size:10px;font-weight:800;letter-spacing:0.5px;cursor:pointer">${e}</button>`).join('')}
+       ${ESTADOS.map(e => `<button onclick="cambiarEstado('${p.id}','${e}')" style="flex:1;padding:8px 4px;border:1.5px solid ${e===p.estado?color:'var(--border)'};background:${e===p.estado?color:'transparent'};color:${e===p.estado?'#fff':'var(--muted)'};font-family:var(--font-d);font-size:10px;font-weight:800;letter-spacing:0.5px;cursor:pointer">${e}</button>`).join('')}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button onclick="descargarTicketPedido('${p.id}')" style="flex:1;min-width:120px;background:var(--black);color:#fff;border:none;padding:10px;font-family:var(--font-d);font-size:13px;font-weight:800;letter-spacing:1px;cursor:pointer">🖨 TICKET</button>
@@ -1814,6 +1829,7 @@ async function cargarPedidos() {
     </div>`;
   }).join('');
 }
+
 async function cambiarEstado(id, estado) {
   if (estado === 'CONFIRMADO') {
     const { data: p } = await supabaseClient.from('pedidos').select('*').eq('id', id).single();
@@ -1822,22 +1838,7 @@ async function cambiarEstado(id, estado) {
       await cargarPedidos();
       return;
     }
-    if (p && p.reservas) {
-      for (const r of p.reservas) {
-        const prod = allProducts.find(x => x.id === r.id);
-        if (!prod || !prod.lotes) continue;
-        let restante = r.qty;
-        for (const lote of prod.lotes) {
-          if (restante <= 0) break;
-          const bajar = Math.min(lote.cant, restante);
-          lote.cant -= bajar;
-          restante -= bajar;
-        }
-        prod.lotes = prod.lotes.filter(l => l.cant > 0);
-        const newData = { ...prod }; delete newData.id;
-        await supabaseClient.from('productos').update({ data: newData }).eq('id', r.id);
-      }
-    }
+    // Solo registrar en historial, el stock ya bajó al entrar el pedido
     if (p && p.data && p.data.items) {
       const { data: histData } = await supabaseClient.from('historial').select('data').eq('id','admin').single();
       const histActual = histData?.data || [];
@@ -1853,18 +1854,43 @@ async function cambiarEstado(id, estado) {
     }
     fetchProducts();
   }
+  if (estado === 'CANCELADO') {
+    const { data: p } = await supabaseClient.from('pedidos').select('*').eq('id', id).single();
+    if (p && p.reservas && p.estado !== 'CANCELADO') {
+      for (const r of p.reservas) {
+        const prod = allProducts.find(x => x.id === r.id);
+        if (!prod) continue;
+        if (!prod.lotes) prod.lotes = [];
+        prod.lotes.push({ cant: r.qty, ven: '2099-12-31', fecha: new Date().toISOString() });
+        const newData = { ...prod }; delete newData.id;
+        await supabaseClient.from('productos').update({ data: newData }).eq('id', r.id);
+      }
+      fetchProducts();
+    }
+  }
   await supabaseClient.from('pedidos').update({ estado, updated_at: new Date().toISOString() }).eq('id', id);
   await cargarPedidos();
 }
 
 async function borrarPedido(id) {
   if (!confirm('¿Eliminar este pedido?')) return;
-  // Devolver stock reservado
   const { data: p } = await supabaseClient.from('pedidos').select('*').eq('id', id).single();
+  // Si no estaba confirmado ni cancelado, devolver stock
+  if (p && p.reservas && p.estado !== 'CONFIRMADO' && p.estado !== 'CANCELADO') {
+    for (const r of p.reservas) {
+      const prod = allProducts.find(x => x.id === r.id);
+      if (!prod) continue;
+      if (!prod.lotes) prod.lotes = [];
+      prod.lotes.push({ cant: r.qty, ven: '2099-12-31', fecha: new Date().toISOString() });
+      const newData = { ...prod }; delete newData.id;
+      await supabaseClient.from('productos').update({ data: newData }).eq('id', r.id);
+    }
+    fetchProducts();
+  }
   await supabaseClient.from('pedidos').delete().eq('id', id);
   await cargarPedidos();
-  fetchProducts();
 }
+
 function descargarTicketPedido(id) {
   supabaseClient.from('pedidos').select('*').eq('id', id).single().then(({ data: p }) => {
     if (!p) return;
