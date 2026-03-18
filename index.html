@@ -1871,7 +1871,7 @@ async function cambiarEstado(id, estado) {
   }
  if (estado === 'CANCELADO') {
     const { data: p } = await supabaseClient.from('pedidos').select('*').eq('id', id).single();
-   if (p && p.reservas && p.estado !== 'CONFIRMADO' && p.estado !== 'CANCELADO' && p.estado !== 'ENTREGADO') {
+   if (p && p.reservas && p.estado !== 'ENTREGADO') {
       for (const r of p.reservas) {
         const prod = allProducts.find(x => x.id === r.id);
         if (!prod) continue;
@@ -1895,7 +1895,7 @@ async function borrarPedido(id) {
   if (!confirm('¿Eliminar este pedido?')) return;
   const { data: p } = await supabaseClient.from('pedidos').select('*').eq('id', id).single();
   // Si no estaba confirmado ni cancelado ni entregado, devolver stock
-  if (p && p.reservas && p.estado !== 'CONFIRMADO' && p.estado !== 'CANCELADO' && p.estado !== 'ENTREGADO') {
+  if (p && p.reservas && p.estado !== 'ENTREGADO') {
     for (const r of p.reservas) {
       const prod = allProducts.find(x => x.id === r.id);
       if (!prod) continue;
