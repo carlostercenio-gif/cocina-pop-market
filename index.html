@@ -1869,14 +1869,19 @@ async function cambiarEstado(id, estado) {
     }
     fetchProducts();
   }
-  if (estado === 'CANCELADO') {
+ if (estado === 'CANCELADO') {
     const { data: p } = await supabaseClient.from('pedidos').select('*').eq('id', id).single();
-    if (p && p.reservas && p.estado !== 'CANCELADO') {
+   if (p && p.reservas && p.estado !== 'CONFIRMADO' && p.estado !== 'CANCELADO' && p.estado !== 'ENTREGADO') {
       for (const r of p.reservas) {
         const prod = allProducts.find(x => x.id === r.id);
         if (!prod) continue;
         if (!prod.lotes) prod.lotes = [];
-        prod.lotes.push({ cant: r.qty, ven: '2099-12-31', fecha: new Date().toISOString() });
+        const loteExistente = prod.lotes.find(l => l.ven === '2099-12-31');
+        if (loteExistente) {
+          loteExistente.cant += r.qty;
+        } else {
+          prod.lotes.push({ cant: r.qty, ven: '2099-12-31', fecha: new Date().toISOString() });
+        }
         const newData = { ...prod }; delete newData.id;
         await supabaseClient.from('productos').update({ data: newData }).eq('id', r.id);
       }
@@ -1886,17 +1891,21 @@ async function cambiarEstado(id, estado) {
   await supabaseClient.from('pedidos').update({ estado, updated_at: new Date().toISOString() }).eq('id', id);
   await cargarPedidos();
 }
-
 async function borrarPedido(id) {
   if (!confirm('¿Eliminar este pedido?')) return;
   const { data: p } = await supabaseClient.from('pedidos').select('*').eq('id', id).single();
-  // Si no estaba confirmado ni cancelado, devolver stock
-  if (p && p.reservas && p.estado !== 'CONFIRMADO' && p.estado !== 'CANCELADO') {
+  // Si no estaba confirmado ni cancelado ni entregado, devolver stock
+  if (p && p.reservas && p.estado !== 'CONFIRMADO' && p.estado !== 'CANCELADO' && p.estado !== 'ENTREGADO') {
     for (const r of p.reservas) {
       const prod = allProducts.find(x => x.id === r.id);
       if (!prod) continue;
       if (!prod.lotes) prod.lotes = [];
-      prod.lotes.push({ cant: r.qty, ven: '2099-12-31', fecha: new Date().toISOString() });
+      const loteExistente = prod.lotes.find(l => l.ven === '2099-12-31');
+      if (loteExistente) {
+        loteExistente.cant += r.qty;
+      } else {
+        prod.lotes.push({ cant: r.qty, ven: '2099-12-31', fecha: new Date().toISOString() });
+      }
       const newData = { ...prod }; delete newData.id;
       await supabaseClient.from('productos').update({ data: newData }).eq('id', r.id);
     }
