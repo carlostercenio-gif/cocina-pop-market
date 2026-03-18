@@ -1433,6 +1433,21 @@ async function sendCartWA() {
    window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
     mostrarConfirm('envio', nombre, total);
     const reservas = items.map(i => ({ id: Object.keys(cart).find(k => cart[k].name === i.name), qty: i.qty }));
+    // Bajar stock al entrar el pedido
+    for (const r of reservas) {
+      const prod = allProducts.find(x => x.id === r.id);
+      if (!prod || !prod.lotes) continue;
+      let restante = r.qty;
+      for (const lote of prod.lotes) {
+        if (restante <= 0) break;
+        const bajar = Math.min(lote.cant, restante);
+        lote.cant -= bajar;
+        restante -= bajar;
+      }
+      prod.lotes = prod.lotes.filter(l => l.cant > 0);
+      const newData = { ...prod }; delete newData.id;
+      await supabaseClient.from('productos').update({ data: newData }).eq('id', r.id);
+    }
     const pedidoId = 'ped_' + Date.now();
     await supabaseClient.from('pedidos').insert({
       id: pedidoId,
