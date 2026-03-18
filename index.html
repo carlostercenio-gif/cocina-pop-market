@@ -1817,6 +1817,11 @@ async function cargarPedidos() {
 async function cambiarEstado(id, estado) {
   if (estado === 'CONFIRMADO') {
     const { data: p } = await supabaseClient.from('pedidos').select('*').eq('id', id).single();
+    if (p && p.estado === 'CONFIRMADO') {
+      await supabaseClient.from('pedidos').update({ estado, updated_at: new Date().toISOString() }).eq('id', id);
+      await cargarPedidos();
+      return;
+    }
     if (p && p.reservas) {
       for (const r of p.reservas) {
         const prod = allProducts.find(x => x.id === r.id);
