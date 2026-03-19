@@ -1874,7 +1874,7 @@ async function cambiarEstado(id, estado) {
   }
 if (estado === 'CANCELADO') {
     const { data: p } = await supabaseClient.from('pedidos').select('*').eq('id', id).single();
- if (p && p.reservas && p.estado !== 'ENTREGADO' && p.estado !== 'CANCELADO') {
+if (p && p.reservas && p.estado !== 'ENTREGADO' && p.estado !== 'CANCELADO') {
       for (const r of p.reservas) {
         const { data: prodRow } = await supabaseClient.from('productos').select('id, data').eq('id', r.id).single();
         if (!prodRow) continue;
