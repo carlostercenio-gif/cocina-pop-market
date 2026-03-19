@@ -1428,7 +1428,10 @@ async function sendCartWA() {
     msg += `👤 *Nombre:* ${nombre}\n`;
     msg += `📱 *Tel:* ${tel}\n\n`;
     msg += `💳 *Pago:* ${pagoText}\n`;
-    msg += `\n⏰ *Horario de entrega:* 18:00 a 22:00hs\n`;
+   const entrega = cfg.entrega || { dias: [], inicio: '18:00', fin: '22:00' };
+    const diasNombres = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    const diasEntregaStr = entrega.dias.map(d => diasNombres[d]).join(' · ');
+    msg += `\n⏰ *Horario de entrega:* ${diasEntregaStr} ${entrega.inicio} a ${entrega.fin}hs\n`;
     msg += '\n¡Gracias! 🍔';
    window.open(`https://wa.me/${WA_NUMBER}?text=`+encodeURIComponent(msg));
     mostrarConfirm('envio', nombre, total);
