@@ -1876,7 +1876,7 @@ async function cambiarEstado(id, estado) {
         const prod = allProducts.find(x => x.id === r.id);
         if (!prod) continue;
         if (!prod.lotes) prod.lotes = [];
-        const loteExistente = prod.lotes.find(l => l.ven === '2099-12-31');
+      const loteExistente = prod.lotes.sort((a, b) => new Date(a.ven) - new Date(b.ven))[0];
         if (loteExistente) {
           loteExistente.cant += r.qty;
         } else {
@@ -1900,7 +1900,7 @@ async function borrarPedido(id) {
       const prod = allProducts.find(x => x.id === r.id);
       if (!prod) continue;
       if (!prod.lotes) prod.lotes = [];
-      const loteExistente = prod.lotes.find(l => l.ven === '2099-12-31');
+      const loteExistente = prod.lotes.sort((a, b) => new Date(a.ven) - new Date(b.ven))[0];
       if (loteExistente) {
         loteExistente.cant += r.qty;
       } else {
