@@ -1260,6 +1260,7 @@ async function saveProduct() {
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
         URL.revokeObjectURL(url);
         canvas.toBlob(blob => {
+          console.log('Original:', file.size, 'Comprimido:', blob?.size, 'Dimensiones:', w, 'x', h);
           if (blob && blob.size < file.size) {
             resolve(blob);
           } else {
@@ -1271,7 +1272,6 @@ async function saveProduct() {
       img.src = url;
     });
   }
-
   // Upload new files
   const newUrls = [];
   for (const file of pendingFiles) {
