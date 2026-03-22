@@ -26,13 +26,10 @@ self.addEventListener('fetch', e => {
     return;
   }
   
-  // Solo cachear archivos estáticos propios
+ // Solo cachear archivos estáticos propios
   e.respondWith(
     caches.match(e.request).then(cached => {
       return cached || fetch(e.request);
     })
-  );
-});
-      .catch(() => caches.match(e.request))
   );
 });
