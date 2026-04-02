@@ -2,8 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta 
-name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#1a1917">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,7 +22,7 @@ name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.
   });
 </script>
 <title>Cocina Pop — Market</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Epilogue:wght@700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
@@ -32,6 +31,7 @@ name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.
   --cream:#f0ebe0; --bone:#e8e1d4; --black:#1a1917; --charcoal:#2d2b28;
   --white:#faf8f4; --accent:#e63946; --text:#1a1917; --muted:#7a746a;
   --border:#d8d0c4; --font-d:'Barlow Condensed',sans-serif; --font-b:'Barlow',sans-serif;
+  --font-h:'Epilogue',sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{background:var(--cream);color:var(--text);font-family:var(--font-b);min-height:100vh;overflow-x:hidden}
@@ -56,7 +56,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .hero-deco{position:absolute;right:-8px;bottom:-10px;font-family:var(--font-d);font-weight:900;font-size:120px;line-height:1;letter-spacing:-2px;color:rgba(0,0,0,0.05);text-transform:uppercase;pointer-events:none;z-index:1}
 .hero-text{position:relative;z-index:2}
 .hero-eyebrow{font-family:var(--font-d);font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:6px}
-.hero-title{font-family:var(--font-d);font-weight:900;font-size:52px;line-height:0.92;text-transform:uppercase;color:var(--black);margin-bottom:10px}
+.hero-title{font-family:var(--font-h);font-weight:900;font-size:48px;line-height:0.95;letter-spacing:-0.04em;text-transform:uppercase;color:var(--black);margin-bottom:10px}
 .hero-title em{font-style:normal;color:var(--accent)}
 .hero-body{font-size:13px;color:var(--charcoal);font-style:italic;line-height:1.5;max-width:240px;font-weight:300}
 
@@ -93,7 +93,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .card:nth-child(1){animation-delay:.05s}.card:nth-child(2){animation-delay:.1s}.card:nth-child(3){animation-delay:.15s}.card:nth-child(4){animation-delay:.2s}.card:nth-child(5){animation-delay:.25s}.card:nth-child(6){animation-delay:.3s}
 @keyframes revealCard{to{opacity:1;transform:translateY(0)}}
 .card-img{width:100%;aspect-ratio:9/16;position:relative;overflow:hidden;background:var(--bone)}
-.card-img img{width:100%;height:100%;object-fit:cover}
+.card-img img{width:100%;height:100%;object-fit:cover;transition:transform 0.5s ease}
+.card:active .card-img img{transform:scale(1.04)}
 .card-emoji-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:52px}
 .ph-1{background:linear-gradient(145deg,#e8d8c8,#c8a888)}.ph-2{background:linear-gradient(145deg,#d8e8d0,#8ab890)}.ph-3{background:linear-gradient(145deg,#e8d0c8,#c87858)}.ph-4{background:linear-gradient(145deg,#e8e0c8,#c8a038)}.ph-5{background:linear-gradient(145deg,#d0d8e8,#789898)}.ph-6{background:linear-gradient(145deg,#e8d8e8,#988898)}
 .card-tag{position:absolute;top:10px;left:10px;background:var(--black);color:var(--cream);font-family:var(--font-d);font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px}
@@ -104,7 +105,7 @@ body.admin .card-admin-actions{display:flex}
 .card-action-btn{background:var(--black);color:#fff;border:none;padding:5px 9px;font-size:10px;cursor:pointer;font-family:var(--font-d);letter-spacing:1px;white-space:nowrap}
 .card-action-btn.hide-btn{background:var(--charcoal)}
 .card-body{padding:12px 14px 14px;border-top:1px solid var(--bone)}
-.card-name{font-family:var(--font-d);font-weight:800;font-size:16px;text-transform:uppercase;line-height:1.1;color:var(--black);margin-bottom:4px}
+.card-name{font-family:var(--font-h);font-weight:800;font-size:15px;letter-spacing:-0.02em;line-height:1.1;color:var(--black);margin-bottom:4px;text-transform:uppercase}
 .card-desc{font-size:11px;color:var(--muted);font-style:italic;line-height:1.4;margin-bottom:12px;font-weight:300}
 .card-footer{display:flex;align-items:center;justify-content:space-between}
 .card-price{font-family:var(--font-d);font-weight:900;font-size:24px;color:var(--black)}
@@ -123,7 +124,6 @@ body.admin .card-admin-actions{display:flex}
 .wa-btn{flex:1;background:#25d366;color:#fff;border:none;padding:15px;font-family:var(--font-d);font-size:16px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
 .order-total{background:var(--bone);border:1.5px solid var(--black);padding:12px 16px;font-family:var(--font-d);font-weight:800;font-size:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;min-width:90px}
 .order-total-label{font-size:9px;letter-spacing:2px;color:var(--muted);font-weight:400}
-
 /* SHEET */
 .sheet-overlay{position:fixed;inset:0;background:rgba(26,25,23,0.6);z-index:200;display:none;align-items:flex-end;backdrop-filter:blur(2px)}
 .sheet-overlay.open{display:flex}
